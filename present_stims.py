@@ -63,7 +63,7 @@ def present_stims():
         )
 
         txt_instr = visual.TextStim(
-            win, text="Appuyez sur ESPACE pour continuer",
+            win, text="Appuyez sur ESPACE pour passer à l'item suivant",
             font="Arial",
             color='black',
             height=pm.text_height,
@@ -78,10 +78,13 @@ def present_stims():
         event.waitKeys(keyList=['space'])
 
     # Tell the participant that the presentation is over, and to call the experimenter
-    fl.type_text("La présentation est terminée. Veuillez attendre l'expérimentateur.",
+    fl.type_text("La présentation est terminée, l'expérience peut commencer. Veuillez attendre l'expérimentateur.",
                 win,
                 height=pm.text_height,
                 background=background)
 
     event.waitKeys(keyList=['space'])
     win.close()
+
+if __name__ == "__main__":
+    present_stims()
