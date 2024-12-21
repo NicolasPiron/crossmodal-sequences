@@ -18,7 +18,7 @@ def type_text(text, win, color="black", height=0.08, background=None):
         displayed_text += letter
         text_stim = visual.TextStim(
             win, text=displayed_text, font="Arial", color=color, 
-            height=height, alignText="center"
+            height=height, alignText="center", wrapWidth=1.5, units="norm"
         )
         background.draw()
         text_stim.draw()

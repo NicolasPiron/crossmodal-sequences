@@ -1,3 +1,3 @@
-Vous allez voir successivement des séquences de 6 items, soit d'images soit de mots.
+Vous allez voir successivement des séquences de 6 items, soit d'images, soit de mots.
 
 Rappelez-vous de l'ordre dans lequel les éléments sont présentés dans chaque séquence. 

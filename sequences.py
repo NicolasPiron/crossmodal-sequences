@@ -6,29 +6,16 @@ import os
 import glob
 from src import stimuli_manager as sm
 from src import flow as fl
-from src.params import cat_mapping, seq_structures
+import src.params as pm
+from present_stims import present_stims
+
+#present_stims()
 
 # parameters
 
 exp_info = {'ID': '00',
             'run': '01',
 }
-
-screen = 1
-seed = 42
-text_height = 0.08
-img_size = 0.4
-img_bg_size = 0.41
-win_size = [1920, 1080]
-iti_dur = 1.5
-stim_dur = 0.5
-input_dir = "data/input"
-background_file = f"{input_dir}/background/background2.jpg"
-stim_bg_file = f"{input_dir}/background/stim_bg.png"
-sound_correct = sound.Sound(f'{input_dir}/sounds/reward.mp3')
-instructions_file = f"{input_dir}/instructions/instructions.txt"
-fixation_image = f"{input_dir}/fix/fix.png"
-n_amodal_items_per_cat = int(len(glob.glob(f"{input_dir}/stims/animals/*.png"))/2)
 
 # run the experiment
 
@@ -44,10 +31,10 @@ if os.path.isfile(logfn):
     raise ValueError("File already exists.")
 
 # Create a window
-win = visual.Window(size=win_size,
+win = visual.Window(size=pm.win_size,
                     fullscr=True,
                     units='norm', 
-                    screen=screen,)
+                    screen=pm.screen,)
 win.mouseVisible = False
 aspect_ratio = win.size[0] / win.size[1]
 
@@ -55,23 +42,23 @@ aspect_ratio = win.size[0] / win.size[1]
 background = visual.ImageStim(
     win, 
     size=(2, 2*aspect_ratio),
-    image=background_file, 
+    image=pm.bg_fn, 
     units="norm"
 )
 
 # Initialization
 fl.type_text("Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer.",
             win,
-            height=text_height,
+            height=pm.text_height,
             background=background)
 
 event.waitKeys(keyList=['space'])
 
-with open(instructions_file, "r", encoding="utf-8") as file:
+with open(pm.instr_fn, "r", encoding="utf-8") as file:
     instructions_text = file.read()
 
 instructions = visual.TextStim(
-    win, text=instructions_text, font="Arial", color='black',  height=text_height,
+    win, text=instructions_text, font="Arial", color='black',  height=pm.text_height,
     alignText="center" )
 
 background.draw()
@@ -82,9 +69,9 @@ fl.check_escape(win)
 event.waitKeys(keyList=['space'])
 
 # Generate the multimodal sequences of items
-sm.check_nstims(cat_mapping, input_dir)
-amodal_sequences = sm.generate_sequences(n_amodal_items_per_cat, cat_mapping, input_dir)
-amodal_sequences = sm.reorg_seq(amodal_sequences, seq_structures) # TODO: save the used items somewhere so they are not used again. 
+sm.check_nstims(pm.cat_mapping, pm.input_dir)
+amodal_sequences = sm.generate_sequences(pm.n_amodal_items_per_cat, pm.cat_mapping, pm.input_dir)
+amodal_sequences = sm.reorg_seq(amodal_sequences, pm.seq_structures) # TODO: save the used items somewhere so they are not used again. 
 
 data = []
 
@@ -101,30 +88,30 @@ for i in range(3): # 3 * mini-blocks (or trials) for a block
 
         sequence_type = block_seq_types_org[j]
         sequence = amodal_sequences[sequence_type]
-        stims = sm.get_stims(input_dir, sequence, modality)
+        stims = sm.get_stims(pm.input_dir, sequence, modality)
 
-        # for stim in stims:
+        for stim in stims:
         
-        #     fl.check_escape(win)
-        #     stim_image = visual.ImageStim(win=win,
-        #                                     image=stim,
-        #                                     size=(img_size, img_size*aspect_ratio))
+            fl.check_escape(win)
+            stim_image = visual.ImageStim(win=win,
+                                            image=stim,
+                                            size=(pm.img_size, pm.img_size*aspect_ratio))
                                      
-        #     background.draw()
-        #     stim_image.draw()
-        #     win.flip()
-        #     core.wait(stim_dur)
-        #     # Display fixation cross
-        #     fix_image = visual.TextStim(win=win,
-        #                                     text='+',
-        #                                     font='Arial',
-        #                                     height=0.1,
-        #                                     color='black',
-        #                                     units='norm')
-        #     background.draw()
-        #     fix_image.draw()
-        #     win.flip()
-        #     core.wait(iti_dur)
+            background.draw()
+            stim_image.draw()
+            win.flip()
+            core.wait(pm.stim_dur)
+            # Display fixation cross
+            fix_image = visual.TextStim(win=win,
+                                            text='+',
+                                            font='Arial',
+                                            height=0.1,
+                                            color='black',
+                                            units='norm')
+            background.draw()
+            fix_image.draw()
+            win.flip()
+            core.wait(pm.iti_dur)
                                      
     # Ask questions. 3 questions, one for each amodal sequence. 
     for k, seq_type in enumerate(block_seq_types_org[0:3]):
@@ -140,31 +127,31 @@ for i in range(3): # 3 * mini-blocks (or trials) for a block
 
         # randomly select in which modality the question will be asked
         modality = np.random.choice(['img', 'txt'])
-        stims = sm.get_stims(input_dir, seq, modality)
+        stims = sm.get_stims(pm.input_dir, seq, modality)
         stim1 = visual.ImageStim(win=win,
                                 image=stims[first_presented],
                                 pos=(-0.4, 0),
-                                size=(img_size, img_size*aspect_ratio),
+                                size=(pm.img_size, pm.img_size*aspect_ratio),
                                 units='norm')
         stim2 = visual.ImageStim(win=win,
                                 image=stims[second_presented],
                                 pos=(0.4, 0),
-                                size=(img_size, img_size*aspect_ratio),
+                                size=(pm.img_size, pm.img_size*aspect_ratio),
                                 units='norm')
 
         text_q_high = 'Quel item arrive en premier dans la séquence? \n Utilisez les flèches du clavier pour répondre.'
         text_al = '<-'
         text_ar = '->'
         
-        q_high = visual.TextStim(win=win, text=text_q_high, pos=(0, 0.55), height=text_height,
+        q_high = visual.TextStim(win=win, text=text_q_high, pos=(0, 0.55), height=pm.text_height,
                                     color='black', units='norm')
-        arrow_l = visual.TextStim(win=win, text=text_al, pos=(-0.4, -0.45), height=text_height,
+        arrow_l = visual.TextStim(win=win, text=text_al, pos=(-0.4, -0.45), height=pm.text_height,
                                     color='black', units='norm')
-        arrow_r = visual.TextStim(win=win, text=text_ar, pos=(0.4, -0.45), height=text_height,
+        arrow_r = visual.TextStim(win=win, text=text_ar, pos=(0.4, -0.45), height=pm.text_height,
                                     color='black', units='norm')
         
         clock = core.Clock()
-        for opacity in range(0, 101, 5): # Adjust the fade speed  
+        for opacity in range(0, 101, 5): # Fading-in effect
             background.draw()
             stim1.opacity = opacity / 100
             stim2.opacity = opacity / 100
@@ -184,8 +171,8 @@ for i in range(3): # 3 * mini-blocks (or trials) for a block
         q_high.draw()
         arrow_l.draw()
         arrow_r.draw()
-        win.flip()
         win.callOnFlip(clock.reset)
+        win.flip()
 
         fl.check_escape(win)
         resp = event.waitKeys(keyList=['left', 'right'], timeStamped=clock, maxWait=10)
@@ -214,7 +201,7 @@ for i in range(3): # 3 * mini-blocks (or trials) for a block
                                     pos=(0, 0),
                                     font="Arial",
                                     color=font_color, 
-                                    height=text_height,
+                                    height=pm.text_height,
                                     units='norm',
                                     bold=True)
         
@@ -222,7 +209,7 @@ for i in range(3): # 3 * mini-blocks (or trials) for a block
         feedback.draw()
         win.flip()
         if correct:
-            sound_correct.play()
+            pm.sound_correct.play()
         core.wait(1)
 
         data.append({'ID': exp_info['ID'],
