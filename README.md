@@ -58,6 +58,14 @@ Stim list :
 - bodyparts : bras, jambe, doigt, main, pied, oreille, (cou). (5*1, 1*2)
 - characters : Shrek, Elsa, Pinochio, Cruella, Alladin, Alice. (1*1, 3*2, 3*3)
 
+if more needed : 
+
+- shapes : rectangle, parralelogram, trapèze, hexagone, anneau, pyramide, cube, cylindre, sphère
+- colors : gris, brun, beige, magenta, turquoise, rose, 
+- animals : zèbre, cerf, ours, loup, renard, chèvre, cochon
+- landscapes : savane, jungle, prairie, clairière, oasis, marécage, île
+- bodyparts : épaule, genoux, coude, ventre, cheville, torse
+- characters : Gandalf, Hermione, Ariel, Mulan, Frodon, Zorro, Rambo, Tintin
 
 # reward sounds were taken from :
     https://pixabay.com/sound-effects/search/level-up/

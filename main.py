@@ -39,7 +39,7 @@ def run(debugging=False):
     )
     logger = logging.getLogger()
 
-    reward_max = sound.Sound(pm.sound0_fn) # TODO: change var name
+    reward_max = sound.Sound(pm.sound0_fn)
     reward1 = sound.Sound(pm.sound1_fn)
     reward2 = sound.Sound(pm.sound2_fn)
     reward3 = sound.Sound(pm.sound3_fn)
@@ -61,12 +61,13 @@ def run(debugging=False):
     )
 
     # Initialization
-    fl.type_text("Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer.",
-                win,
-                height=pm.text_height,
-                background=background)
-
-    event.waitKeys(keyList=['space'])
+    if exp_info['run'] == '01': # only present the instructions at the first run
+        fl.type_text("Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer.",
+                    win,
+                    height=pm.text_height,
+                    background=background,
+                    t=pm.t)
+        event.waitKeys(keyList=['space'])
 
     with open(pm.instr_fn, "r", encoding="utf-8") as file:
         instructions_text = file.read()
@@ -109,7 +110,7 @@ def run(debugging=False):
                 logger.info(f'Remaining unique_sequences_pool: {unique_sequences_pool}')
 
                 block_info = visual.TextStim(win=win,
-                                text=f'Block {block_id} \nAppuyez sur la touche ESPACE pour commencer!',
+                                text=f'Bloc {block_id} \nAppuyez sur la touche ESPACE pour commencer!',
                                 pos=(0, 0),
                                 font="Arial",
                                 color='black', 
@@ -304,11 +305,16 @@ def run(debugging=False):
                     else:
                         global_feedback = "Dommage! Vous n'avez répondu correctement à aucune question."
 
-                    fl.type_text(f"{global_feedback} \nL'essai suivant va commencer.",
+                    if trial_id == 3:
+                        block_info = f"Fin du bloc {block_id}. Le bloc suivant va commencer."
+                    else:
+                        block_info = f"L'essai suivant va commencer."
+
+                    fl.type_text(f"{global_feedback} \n{block_info}",
                                 win,
                                 height=pm.text_height,
                                 background=background,
-                                t=0.01)
+                                t=pm.t)
                     core.wait(3)
 
                 logger.info(f'Block {block_id} completed successfully.')

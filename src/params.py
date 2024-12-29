@@ -13,6 +13,7 @@ instr_stimpres_fn = f"{input_dir}/instructions/instr_stim_pres.txt"
 fix_img_fn = f"{input_dir}/fix/fix.png"
 
 # stim config
+t = 0.00001 # speed of text presentation
 screen = 0 
 seed = 42
 text_height = 0.08

@@ -86,7 +86,8 @@ def check_demo_info(exp_info):
     only_questions = exp_info.get('only questions', '')
     if only_questions not in ('yes', 'no'):
         print("--- Invalid 'only questions': Must be 'yes' or 'no'. Exiting... ---")
-
+        quit()
+        
     print("--- Valid info entered, ready to proceed ---")
 
 def handle_user_cancel(dlg, logger=None):

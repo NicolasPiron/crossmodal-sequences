@@ -30,7 +30,11 @@ def run_demo():
     if len(os.listdir(out_dir)) > 0:
         os.system(f"rm -r {out_dir}/*") # remove all files in the output directory
 
-    sound_correct = sound.Sound(pm.sound_fn) # load sound here
+    reward_max = sound.Sound(pm.sound0_fn)
+    reward1 = sound.Sound(pm.sound1_fn)
+    reward2 = sound.Sound(pm.sound2_fn)
+    reward3 = sound.Sound(pm.sound3_fn)
+
     # Create a window
     win = visual.Window(size=pm.win_size,
                         fullscr=True,
@@ -131,6 +135,7 @@ def run_demo():
                     win.flip()
                     core.wait(pm.iti_dur)
             # Ask questions. 3 questions, one for each amodal sequence. 
+            good_answers_count = 0
             for l, seq_name in enumerate(block_seq_org[0:3]):
 
                 question_id = l + 1 
@@ -209,10 +214,19 @@ def run_demo():
                     correct = True
                     feedback_text = "Correct!"
                     font_color = 'green'
+                    good_answers_count += 1
                 elif (key == 'left' and first_presented == idx2) or (key == 'right' and first_presented == idx1):
                     correct = False
                     feedback_text = "Incorrect!"
                     font_color = 'red'
+
+                 # sound selection
+                if good_answers_count == 1:
+                    reward = reward1
+                elif good_answers_count == 2:
+                    reward = reward2
+                elif good_answers_count == 3:
+                    reward = reward3
 
                 feedback = visual.TextStim(win=win,
                                             text=feedback_text,
@@ -227,7 +241,7 @@ def run_demo():
                 feedback.draw()
                 win.flip()
                 if correct:
-                    sound_correct.play()
+                    reward.play()
                 core.wait(1)
                 date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 data.append({'ID': exp_info['ID'],
@@ -247,6 +261,26 @@ def run_demo():
                 
                 pd.DataFrame(data).to_csv(f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}.csv", index=False)
 
+            # encouraging message
+            if good_answers_count == 3:
+                global_feedback = "Bravo! Vous avez répondu correctement à toutes les questions."
+                reward_max.play() 
+            elif good_answers_count == 2:
+                global_feedback = "Bien joué! Vous avez répondu correctement à 2 questions."
+            elif good_answers_count == 1:
+                global_feedback = "Pas mal! Vous avez répondu correctement à 1 question."
+            else:
+                global_feedback = "Dommage! Vous n'avez répondu correctement à aucune question."
+
+            
+            block_info = "Fin de la demo."
+
+            fl.type_text(f"{global_feedback} \n{block_info}",
+                        win,
+                        height=pm.text_height,
+                        background=background,
+                        t=pm.t)
+            core.wait(3)
 
 if __name__ == "__main__":
     run_demo()

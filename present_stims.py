@@ -5,10 +5,9 @@ import src.params as pm
 import src.flow as fl
 import src.stimuli_manager as sm
 
+# This scripts shows the images and the related words to the participant
 
 def present_stims():
-
-    # This scripts shows the images and the related words to the participant
 
     # get all the stimuli
     all_items = glob.glob("data/input/stims/*/*.png")
@@ -39,16 +38,18 @@ def present_stims():
     fl.type_text(instructions_text,
                 win,
                 height=pm.text_height,
-                background=background)
+                background=background,
+                t=pm.t)
 
     event.waitKeys(keyList=['space'])
 
-    for item in all_items:
+    for item in all_items: # match the image and the text
         item_img = [img for img in all_img if item in img][0]
         item_txt = [txt for txt in all_txt if item in txt][0]
 
         win.flip()
         core.wait(0.01) # to add a white flash between stims
+        fl.check_escape(win)
 
         img_stim = visual.ImageStim(
             win, 
@@ -85,11 +86,12 @@ def present_stims():
     fl.type_text("La présentation est terminée, l'expérience peut commencer. Veuillez attendre l'expérimentateur.",
                 win,
                 height=pm.text_height,
-                background=background)
+                background=background,
+                t=pm.t)
 
     event.waitKeys(keyList=['space'])
     win.close()
 
 if __name__ == "__main__":
-    sm.check_img_txt()
+    sm.check_img_txt(pm.input_dir) 
     present_stims()

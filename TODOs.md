@@ -3,9 +3,8 @@
 - trigger/events info
 - rewards in random blocks / trials (in virtual points)
 
-# to complete :
+# to complete/modify :
 
-- add more text (e.g. end of the run, or new block) + feedback?
 - change the question. More time to think about the order (one picture apearing before the other?)
 
 # to keep in mind :
