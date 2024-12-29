@@ -57,3 +57,7 @@ Stim list :
 - landscapes : plage, montagnes, forêt, desert, collines, lac. (2*1, 4*2)
 - bodyparts : bras, jambe, doigt, main, pied, oreille, (cou). (5*1, 1*2)
 - characters : Shrek, Elsa, Pinochio, Cruella, Alladin, Alice. (1*1, 3*2, 3*3)
+
+
+# reward sounds were taken from :
+    https://pixabay.com/sound-effects/search/level-up/

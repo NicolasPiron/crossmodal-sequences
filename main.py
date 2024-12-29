@@ -1,5 +1,4 @@
 import os
-import random
 import logging
 from datetime import datetime
 from psychopy.gui import DlgFromDict
@@ -40,7 +39,11 @@ def run(debugging=False):
     )
     logger = logging.getLogger()
 
-    sound_correct = sound.Sound(pm.sound_fn) # load sound here
+    reward_max = sound.Sound(pm.sound0_fn) # TODO: change var name
+    reward1 = sound.Sound(pm.sound1_fn)
+    reward2 = sound.Sound(pm.sound2_fn)
+    reward3 = sound.Sound(pm.sound3_fn)
+
     # Create a window
     win = visual.Window(size=pm.win_size,
                         fullscr=True,
@@ -127,7 +130,8 @@ def run(debugging=False):
                                                                         sequences=chosen_sequences)
 
                     for k, modality in enumerate(block_mod_org): # loop over the 6 sequences (e.g. A, B, C * the two modalities (img, txt))
-
+                        
+                        logger.info(f'Block {block_id}, trial {trial_id}, sequence {k+1}...')
                         sequence_name = block_seq_org[k]
                         sequence = amodal_sequences[sequence_name]
                         stims = sm.get_stims(pm.input_dir, sequence, modality)
@@ -159,10 +163,13 @@ def run(debugging=False):
                             core.wait(pm.iti_dur)
                                                     
                     # Ask questions. 3 questions, one for each amodal sequence. 
+                    good_answers_count = 0
                     for l, seq_name in enumerate(block_seq_org[0:3]):
 
-                        fl.check_escape(win, logger)
                         question_id = l + 1 
+                        
+                        logger.info(f'Block {block_id}, trial {trial_id}, question {question_id}...')
+                        fl.check_escape(win, logger)
 
                         seq = amodal_sequences[seq_name] # get the sequence of items
                         idx1, idx2 = sm.draw_two(seq) # draw two items from the sequence
@@ -236,6 +243,7 @@ def run(debugging=False):
                             correct = True
                             feedback_text = "Correct!"
                             font_color = 'green'
+                            good_answers_count += 1
                         elif (key == 'left' and first_presented == idx2) or (key == 'right' and first_presented == idx1):
                             correct = False
                             feedback_text = "Incorrect!"
@@ -250,15 +258,24 @@ def run(debugging=False):
                                                     units='norm',
                                                     bold=True)
                         
+                        # sound selection
+                        if good_answers_count == 1:
+                            reward = reward1
+                        elif good_answers_count == 2:
+                            reward = reward2
+                        elif good_answers_count == 3:
+                            reward = reward3
+                        
                         background.draw()
                         feedback.draw()
                         win.flip()
                         if correct:
-                            sound_correct.play()
+                            reward.play()
                         core.wait(1)
-
+                        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         data.append({'ID': exp_info['ID'],
                                     'run': exp_info['run'],
+                                    'date': date,
                                     'block': block_id,
                                     'trial': trial_id,
                                     'question': question_id,
@@ -271,16 +288,34 @@ def run(debugging=False):
                                     'correct': correct,
                                     'rt': rt})
                         
+                        logger.info(f'Saving data of trial {trial_id}, question {question_id}...')
+                        pd.DataFrame(data).to_csv(f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}.csv", index=False)
+                        logger.info('Data saved successfully.')
                         core.wait(0.5)
+                    
+                    # encouraging message
+                    if good_answers_count == 3:
+                        global_feedback = "Bravo! Vous avez répondu correctement à toutes les questions."
+                        reward_max.play() 
+                    elif good_answers_count == 2:
+                        global_feedback = "Bien joué! Vous avez répondu correctement à 2 questions."
+                    elif good_answers_count == 1:
+                        global_feedback = "Pas mal! Vous avez répondu correctement à 1 question."
+                    else:
+                        global_feedback = "Dommage! Vous n'avez répondu correctement à aucune question."
+
+                    fl.type_text(f"{global_feedback} \nL'essai suivant va commencer.",
+                                win,
+                                height=pm.text_height,
+                                background=background,
+                                t=0.01)
+                    core.wait(3)
 
                 logger.info(f'Block {block_id} completed successfully.')
             except Exception as exc:
                 fl.log_exceptions(f"Error during run {exp_info['run']}, block {block_id}: {exc}", logger, win)
 
         logger.info(f'Run {exp_info["run"]} completed successfully.')
-        logger.info('Saving data...')
-        pd.DataFrame(data).to_csv(f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}.csv", index=False)
-        logger.info('Data saved successfully.')
         win.close()
         core.quit()
 

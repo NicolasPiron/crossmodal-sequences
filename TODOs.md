@@ -2,12 +2,9 @@
 
 - trigger/events info
 - rewards in random blocks / trials (in virtual points)
-- create a demo
 
 # to complete :
 
-- error with sequence sampling?
-- save csv and overwrite
 - add more text (e.g. end of the run, or new block) + feedback?
 - change the question. More time to think about the order (one picture apearing before the other?)
 

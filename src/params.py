@@ -4,7 +4,10 @@ from psychopy import prefs
 input_dir = "data/input"
 bg_fn = f"{input_dir}/background/background2.jpg"
 stim_bg_fn = f"{input_dir}/background/stim_bg.png"
-sound_fn = f'{input_dir}/sounds/reward.mp3'
+sound0_fn = f'{input_dir}/sounds/reward.mp3'
+sound1_fn = f'{input_dir}/sounds/reward1.mp3'
+sound2_fn = f'{input_dir}/sounds/reward2.mp3'
+sound3_fn = f'{input_dir}/sounds/reward3.mp3'
 instr_fn = f"{input_dir}/instructions/instructions.txt"
 instr_stimpres_fn = f"{input_dir}/instructions/instr_stim_pres.txt"
 fix_img_fn = f"{input_dir}/fix/fix.png"
@@ -24,6 +27,8 @@ prefs.hardware['audioLib'] = ['PTB']
 n_amodal_items_per_cat = 6
 n_blocks = 4
 n_trials = 3
+n_blocks_demo = 1
+n_trials_demo = 1
 
 seq_structures = {'A': [0, 1, 2, 3, 4, 5],
                 'B': [2, 4, 5, 1, 0, 3],
