@@ -1,8 +1,9 @@
-from psychopy import visual, event
+from psychopy import visual, event, core
 import glob
 import os
 import src.params as pm
 import src.flow as fl
+import src.stimuli_manager as sm
 
 
 def present_stims():
@@ -46,6 +47,9 @@ def present_stims():
         item_img = [img for img in all_img if item in img][0]
         item_txt = [txt for txt in all_txt if item in txt][0]
 
+        win.flip()
+        core.wait(0.01) # to add a white flash between stims
+
         img_stim = visual.ImageStim(
             win, 
             image=item_img,
@@ -87,4 +91,5 @@ def present_stims():
     win.close()
 
 if __name__ == "__main__":
+    sm.check_img_txt()
     present_stims()

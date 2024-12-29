@@ -47,3 +47,13 @@ If we want to go for 12 presentations, we need to add two blocks.
 ----------------------
 1 block = ~ 00:04:30 
 8 block without counting the breaks : 36 minutes. Good enough. 
+
+----------------------
+Stim list : 
+
+- shapes : carré, triangle, cercle, étoile, losange, ovale. (6*2 syllables)
+- colors : rouge, bleu, vert, jaune, orange, violet. (4*1 syllable, 2*2). If we go 6*1, we could compare these with body parts. 
+- animals : chat, chien, souris, vache, chameau, elephant. (3*1, 2*2, 1*3)
+- landscapes : plage, montagnes, forêt, desert, collines, lac. (2*1, 4*2)
+- bodyparts : bras, jambe, doigt, main, pied, oreille, (cou). (5*1, 1*2)
+- characters : Shrek, Elsa, Pinochio, Cruella, Alladin, Alice. (1*1, 3*2, 3*3)
