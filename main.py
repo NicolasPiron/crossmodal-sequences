@@ -38,6 +38,9 @@ def run(debugging=False):
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
     logger = logging.getLogger()
+    logger.info('Experiment started.')
+    logger.info(f'Participant ID: {exp_info["ID"]}')
+    logger.info(f'Run number: {exp_info["run"]}')
 
     reward_max = sound.Sound(pm.sound0_fn)
     reward1 = sound.Sound(pm.sound1_fn)
@@ -82,14 +85,16 @@ def run(debugging=False):
 
     fl.check_escape(win, logger)
     event.waitKeys(keyList=['space'])
+    logger.info('Instructions successfully presented.')
 
     # Generate the multimodal sequences of items
     try:
         sm.check_nstims(pm.cat_mapping, pm.input_dir)
         sm.check_img_txt(pm.input_dir)
-        amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures)
+        amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, randomize=False) # False for testing purposes
         unique_sequences_pool = list(amodal_sequences.keys())*2 # to keep track of which sequences are sampled 
         logger.info('Sequences successfully generated.')
+        logger.info('Sequences: ' + str(amodal_sequences))
     except Exception as exc:
         fl.log_exceptions(f"An error occurred during sequence generation: {exc}", logger, win)
 
@@ -106,7 +111,8 @@ def run(debugging=False):
                     chosen_sequences, unique_sequences_pool = sm.sample_until_no_dupes(unique_sequences_pool) 
                 else:
                     chosen_sequences, unique_sequences_pool = sm.sample_n_throw(unique_sequences_pool) # sample 3 sequences
-                logger.info(f'Block {block_id} sequences: {chosen_sequences}')
+                logger.info(f'Block: {block_id}')
+                logger.info(f'Sequences: {chosen_sequences}')
                 logger.info(f'Remaining unique_sequences_pool: {unique_sequences_pool}')
 
                 block_info = visual.TextStim(win=win,
@@ -129,16 +135,22 @@ def run(debugging=False):
                     # Generate random order of modalities and sequence types for a block
                     block_mod_org, block_seq_org = sm.generate_block_org(block_modalities=['img', 'txt'],
                                                                         sequences=chosen_sequences)
+                    logger.info(f'Trial: {trial_id}')
+                    logger.info('Block modalities order: ' + str(block_mod_org))
+                    logger.info('Block sequences order: ' + str(block_seq_org))
 
                     for k, modality in enumerate(block_mod_org): # loop over the 6 sequences (e.g. A, B, C * the two modalities (img, txt))
                         
-                        logger.info(f'Block {block_id}, trial {trial_id}, sequence {k+1}...')
                         sequence_name = block_seq_org[k]
                         sequence = amodal_sequences[sequence_name]
                         stims = sm.get_stims(pm.input_dir, sequence, modality)
 
-                        for stim in stims:
+                        logger.info(f'Sequence number: {k+1}')
+                        logger.info(f'Sequence name: {sequence_name}')
+                        logger.info(f'Sequence modality: {modality}')
 
+                        for l, stim in enumerate(stims):
+                            
                             if debugging:
                                 continue
                         
@@ -149,8 +161,17 @@ def run(debugging=False):
                                                     
                             background.draw()
                             stim_image.draw()
+                            # log info there to be closer to the actual presentation
+                            logger.info(f'Stimulus number: {l+1}')
+                            logger.info(f'Stimulus name: {str(sequence[l])}')
+                            logger.info(f'Stimulus category: {sm.get_cat_from_stim(stim)}')
+                            logger.info(f'Stimulus path: {stim}')
+
                             win.flip()
-                            core.wait(pm.stim_dur)
+                            if debugging:
+                                core.wait(0.3)
+                            else:
+                                core.wait(pm.stim_dur)
                             # Display fixation cross
                             fix_image = visual.TextStim(win=win,
                                                             text='+',
@@ -161,7 +182,10 @@ def run(debugging=False):
                             background.draw()
                             fix_image.draw()
                             win.flip()
-                            core.wait(pm.iti_dur)
+                            if debugging:
+                                core.wait(0.5)
+                            else:
+                                core.wait(pm.iti_dur)
                                                     
                     # Ask questions. 3 questions, one for each amodal sequence. 
                     good_answers_count = 0
@@ -169,25 +193,39 @@ def run(debugging=False):
 
                         question_id = l + 1 
                         
-                        logger.info(f'Block {block_id}, trial {trial_id}, question {question_id}...')
+                        logger.info(f'Question number: {question_id}')
+                        logger.info(f'Sequence name: {seq_name}')
                         fl.check_escape(win, logger)
 
-                        seq = amodal_sequences[seq_name] # get the sequence of items
-                        idx1, idx2 = sm.draw_two(seq) # draw two items from the sequence
-                        first_presented = np.min([idx1, idx2])
-                        second_presented = np.max([idx1, idx2])
-                        correct_answer = seq[first_presented] # good answer as a string
+                        idx1, idx2 = sm.draw_two(sequence) # draw two items from the sequence (indices)
+                        first_for_question = sequence[idx1] # first item to be presented for the question
+                        second_for_question = sequence[idx2]
+                        first_in_seq = sequence[np.min([idx1, idx2])] # good answer as a string
+
+                        if first_in_seq == first_for_question:
+                            correct_answer = 'left'
+                        elif first_in_seq == second_for_question:
+                            correct_answer = 'right'
 
                         # randomly select in which modality the question will be asked
                         modality = np.random.choice(['img', 'txt'])
-                        stims = sm.get_stims(pm.input_dir, seq, modality)
+                        stims = sm.get_stims(pm.input_dir, sequence, modality)
+
+                        logger.info(f'First item on screen: {first_for_question}')
+                        logger.info(f"First item's index: {idx1}")
+                        logger.info(f"First item's category: {sm.get_cat_from_stim(stims[idx1])}")
+                        logger.info(f'Second item on screen: {second_for_question}')
+                        logger.info(f"Index of second item: {idx2}")
+                        logger.info(f"Second item's category: {sm.get_cat_from_stim(stims[idx2])}")
+                        logger.info(f"Correct answer: {correct_answer}")
+
                         stim1 = visual.ImageStim(win=win,
-                                                image=stims[first_presented],
+                                                image=stims[idx1],
                                                 pos=(-0.4, 0),
                                                 size=(pm.img_size, pm.img_size*aspect_ratio),
                                                 units='norm')
                         stim2 = visual.ImageStim(win=win,
-                                                image=stims[second_presented],
+                                                image=stims[idx2],
                                                 pos=(0.4, 0),
                                                 size=(pm.img_size, pm.img_size*aspect_ratio),
                                                 units='norm')
@@ -203,13 +241,12 @@ def run(debugging=False):
                         arrow_r = visual.TextStim(win=win, text=text_ar, pos=(0.4, -0.45), height=pm.text_height,
                                                     color='black', units='norm')
                         
+                        question_clock = core.Clock() # maybe useless
                         rt_clock = core.Clock()
                         for opacity in range(0, 101, 5): # Fading-in effect
                             background.draw()
                             stim1.opacity = opacity / 100
-                            stim2.opacity = opacity / 100
                             stim1.draw()
-                            stim2.draw()
                             q_high.draw()
                             arrow_l.draw()
                             arrow_r.draw()
@@ -217,18 +254,32 @@ def run(debugging=False):
                             core.wait(0.01)
                         
                         stim1.opacity = 1 # do it again to make sure the clock has reset for the last flip
-                        stim2.opacity = 1
+                        background.draw()
+                        stim1.draw()
+                        q_high.draw()
+                        arrow_l.draw()
+                        arrow_r.draw()
+                        win.callOnFlip(question_clock.reset) # TODO: do we want the reset when the image starts to appear or when it's fully visible?
+                        win.flip()
+
+                        if debugging:
+                            wait_2nd_stim = 0
+                        else:
+                            wait_2nd_stim = 5
+                        core.wait(wait_2nd_stim) # justify 5s
+
                         background.draw()
                         stim1.draw()
                         stim2.draw()
                         q_high.draw()
                         arrow_l.draw()
                         arrow_r.draw()
-                        win.callOnFlip(rt_clock.reset) # TODO: do we want the reset when the image starts to appear or when it's fully visible?
+                        win.callOnFlip(rt_clock.reset)
                         win.flip()
 
                         fl.check_escape(win, logger)
                         resp = event.waitKeys(keyList=['left', 'right'], timeStamped=rt_clock, maxWait=10)
+                        logger.info(f'Key pressed: {resp[0]}')
 
                         if resp is None:
                             key = 'NA'
@@ -236,19 +287,24 @@ def run(debugging=False):
                             correct = False
                             feedback_text = "Trop lent!"
                             font_color = 'red'
+                            logger.info('Response: NA')
+                            logger.info('RT: NA')
                         else:
                             key = resp[0][0]
                             rt = resp[0][1]
-                        
-                        if (key == 'left' and first_presented == idx1) or (key == 'right' and first_presented == idx2):
+                        if key == correct_answer:
                             correct = True
                             feedback_text = "Correct!"
                             font_color = 'green'
                             good_answers_count += 1
-                        elif (key == 'left' and first_presented == idx2) or (key == 'right' and first_presented == idx1):
+                            logger.info('Response: Correct')
+                            logger.info(f'RT: {rt}')
+                        elif key != correct_answer:
                             correct = False
                             feedback_text = "Incorrect!"
                             font_color = 'red'
+                            logger.info('Response: Incorrect')
+                            logger.info(f'RT: {rt}')
 
                         feedback = visual.TextStim(win=win,
                                                     text=feedback_text,
@@ -282,16 +338,14 @@ def run(debugging=False):
                                     'question': question_id,
                                     'modality': modality,
                                     'sequence_name': seq_name,
-                                    'first_presented': seq[first_presented],
-                                    'second_presented': seq[second_presented],
+                                    'first_presented': first_for_question,
+                                    'second_presented': second_for_question,
                                     'correct_answer': correct_answer,
                                     'response': key,
                                     'correct': correct,
                                     'rt': rt})
-                        
-                        logger.info(f'Saving data of trial {trial_id}, question {question_id}...')
+
                         pd.DataFrame(data).to_csv(f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}.csv", index=False)
-                        logger.info('Data saved successfully.')
                         core.wait(0.5)
                     
                     # encouraging message
@@ -315,7 +369,10 @@ def run(debugging=False):
                                 height=pm.text_height,
                                 background=background,
                                 t=pm.t)
-                    core.wait(3)
+                    if debugging:
+                        core.wait(0.1)
+                    else:
+                        core.wait(3)
 
                 logger.info(f'Block {block_id} completed successfully.')
             except Exception as exc:
