@@ -23,6 +23,27 @@ win_size = [1512, 982]
 iti_dur = 1.5
 stim_dur = 0.5
 prefs.hardware['audioLib'] = ['PTB']
+use_mock_port = True
+pport = None
+categories = {'animals':0,
+                'bodyparts':1,
+                'characters':2,
+                'colors':3,
+                'landscapes':4,
+                'shapes':5,
+    }
+
+triggers = {'animals':{'seq':1, 'quest':11},
+                'bodyparts':{'seq':2, 'quest':12},
+                'characters':{'seq':3, 'quest':13},
+                'colors':{'seq':4, 'quest':14},
+                'landscapes':{'seq':5, 'quest':15},
+                'shapes':{'seq':6, 'quest':16},
+                'correct':101,
+                'incorrect':102,
+    }
+
+
 
 # organization
 n_amodal_items_per_cat = 6
@@ -39,14 +60,4 @@ seq_structures = {'A': [0, 1, 2, 3, 4, 5],
                 'F': [5, 2, 3, 4, 1, 0]
 }
 
-run_structure = {
 
-}
-
-cat_mapping = {0:'colors',
-               1:'shapes',
-               2:'animals',
-               3:'landscapes',
-               4:'characters',
-               5:'bodyparts',
-}

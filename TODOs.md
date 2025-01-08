@@ -1,7 +1,8 @@
+
+IMPORTANT: port to python 3.9 to work with https://fcbg-platforms.github.io/byte-triggers/index.html
+
 # to add : 
 
-- increase randomization. Sequence structure stays the same across subjects but stims need to change. 
-- trigger/events info. Start with something like a mock port that sends info to csv instead of MEG screen. 
 - rewards in random blocks / trials (in virtual points). 
 - associate sound to sequence (should be pseudo-randomized)
 - questions at the end of the run to test exaustive knowledge of the participants. 
@@ -20,7 +21,6 @@
 ## structural
 - change the question. More time to think about the order (1st item of the list apearing (5s), then one of the 5 other).
 - use frames instead of time. 
-- keep track of everything that happens (timing and order of stim and questions.)
 
 # to keep in mind :
 

@@ -1,7 +1,9 @@
 import csv
+import glob
 import re
 
-log_file_path = '/Users/pironn/Documents/PhD/experiment/crossmodal-sequences/data/output/sub-00/sub-00_run-01_cmseq-logs-20250107-1740.log'
+data_path = '/Users/pironn/Documents/PhD/experiment/crossmodal-sequences/data/output'
+log_file_path = glob.glob(f'{data_path}/sub-00/*.log')[0]
 
 # Output CSV file path
 csv_output_path = '/Users/pironn/Documents/PhD/experiment/crossmodal-sequences/data/output/sub-00/logs_transformed.csv'

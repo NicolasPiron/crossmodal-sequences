@@ -5,13 +5,16 @@ import glob
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
-def get_cat_from_stim(stim):
+def get_cat_from_stim(stim: str):
     '''Extract the category from a stimulus path'''
     return os.path.basename(os.path.dirname(stim))
 
-def draw_two(sequence):
-    ''' Returns two items and their positions in the sequence'''
+def draw_two(sequence, ignore_idx: list=None):
+    ''' Returns two items and their positions in the sequence. Will ignore some indices if provided'''
     indices = random.sample(range(len(sequence)), 2)  # Get 2 unique indices
+    if ignore_idx:
+        while any([i in ignore_idx for i in indices]):
+            indices = random.sample(range(len(sequence)), 2)
     return indices
 
 def get_stims(input_dir, sequence, modality):
@@ -81,17 +84,19 @@ def generate_sequences(input_dir, seq_structures, randomize=False):
     
     return sequences
 
-def generate_block_org(block_modalities=['img', 'txt'], sequences=[]):
+def generate_block_org(block_modalities=['img', 'txt'], sequences=list()):
     ''' Generate the order of modalities and sequence types for a block'''
+    if len(sequences) == 0:
+        raise ValueError("Please provide the sequence names")
     m_order = list(np.random.permutation(block_modalities)) * 3
     s_order = list(np.random.permutation(sequences)) * 2
     return m_order, s_order
 
 
-def check_nstims(cat_mapping, input_dir):
+def check_nstims(categories, input_dir):
     'Check if there is the same number of stim per class, raise error if not'
     counter = 0
-    for i, cat in enumerate(cat_mapping.values()):
+    for i, cat in enumerate(categories.keys()):
         nstim = len(glob.glob(f"{input_dir}/stims/{cat}/*.png"))
         if i == 0:
             counter = nstim
@@ -119,6 +124,15 @@ def check_img_txt(input_dir):
 ***************************************
 """
 
+# TODO: write a small file that tests all the important functions and run it before the experiment
+
+def test_draw_two():
+
+    seq = [0, 1, 2, 3, 4, 5]
+    ignore_idx = [0, 1, 3, 4]
+    indices = draw_two(seq, ignore_idx)
+    assert indices not in [[0, 1], [1, 0], [3, 4], [4, 3]], "Indices should not be in ignore_idx"
+    print("\o/ All tests passed for draw_two()")
 
 def test_generate_sequences(input_dir, seq_structures):
 
@@ -167,3 +181,16 @@ def test_generate_sequences(input_dir, seq_structures):
     assert n_similar_items != n_pairs, f"When param randomize=True, the sequences should be different between iterations"
     print(f'When randomize=True, the number of similar items: {n_similar_items} out of {n_pairs} pairs ({1/(n_pairs/n_similar_items)*100:.2f}%), should be around 16.66%')
     print("\o/ All tests passed for generate_sequences()")
+
+
+if __name__ == '__main__':
+    input_dir = "data/input"
+    seq_structures = {'A': [0, 1, 2, 3, 4, 5],
+                'B': [2, 4, 5, 1, 0, 3],
+                'C': [1, 4, 2, 0, 3, 5],
+                'D': [3, 0, 1, 5, 2, 4],
+                'E': [4, 1, 0, 5, 3, 2],
+                'F': [5, 2, 3, 4, 1, 0]
+}
+    sequences = generate_sequences(input_dir, seq_structures, randomize=False)
+    print(sequences)
