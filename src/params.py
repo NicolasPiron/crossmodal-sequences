@@ -33,7 +33,7 @@ categories = {'animals':0,
                 'shapes':5,
     }
 
-triggers = {'animals':{'seq':1, 'quest':11},
+triggers = {'animals':{'seq':1, 'quest':11}, # TODO: add more triggers (modalities etc.)
                 'bodyparts':{'seq':2, 'quest':12},
                 'characters':{'seq':3, 'quest':13},
                 'colors':{'seq':4, 'quest':14},

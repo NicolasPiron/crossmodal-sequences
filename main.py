@@ -8,7 +8,7 @@ import pandas as pd
 from src import stimuli_manager as sm
 from src import flow as fl
 import src.params as pm
-from src.mock_parallel import MockParallelPort # TODO: implement byte_triggers.ParallelPortTrigger 
+import byte_triggers as bt
 from present_stims import present_stims
 
 def run(debugging=False):
@@ -16,12 +16,6 @@ def run(debugging=False):
     exp_info = {'ID': '00',
                 'run': '01',
     }
-
-    if pm.use_mock_port:
-        port = MockParallelPort()
-    else:
-        port = parallel.ParallelPort(address=None) # to adjuste
-    port.setData(0)
 
     # run the experiment
     dlg = DlgFromDict(exp_info, title='Enter participant info', sortKeys=False)
@@ -39,11 +33,18 @@ def run(debugging=False):
         else:
             os.system(f"rm -r {out_dir}/*") # remove all files in the output directory
 
+    bt.add_file_handler(logfn, mode='a', verbose='INFO')
     logging.basicConfig(
         filename=logfn,
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
+
+    if pm.use_mock_port:
+        pport = bt.MockTrigger()
+    else:
+        pport = bt.ParallelPortTrigger(pm.pport, delay=10)
+
     logger = logging.getLogger()
     logger.info('Experiment started.')
     logger.info(f'Participant ID: {exp_info["ID"]}')
@@ -116,6 +117,7 @@ def run(debugging=False):
                 items_used_for_questions = {} # this is initialized at the beginning of each block to avoid repetitions
 
                 if block_id == 3:
+                    # TODO: control transitions across trials, A will be followed by B only once etc.
                     # needs to be done at 3rd iteration so that the last block has 3 unique sequences
                     chosen_sequences, unique_sequences_pool = sm.sample_until_no_dupes(unique_sequences_pool) 
                 else:
@@ -164,6 +166,7 @@ def run(debugging=False):
                                 continue
 
                             stim_cat = sm.get_cat_from_stim(stim)
+                            trig = pm.triggers[stim_cat]['seq']
                         
                             fl.check_escape(win, logger)
                             stim_image = visual.ImageStim(win=win,
@@ -178,7 +181,7 @@ def run(debugging=False):
                             logger.info(f'stimulus category: {stim_cat}')
                             logger.info(f'stimulus path: {stim}')
 
-                            win.callOnFlip(port.setData, pm.triggers[stim_cat])
+                            win.callOnFlip(pport.signal, trig)
                             win.flip()
                             core.wait()
 
@@ -239,13 +242,10 @@ def run(debugging=False):
                         modality = np.random.choice(['img', 'txt'])
                         stims = sm.get_stims(pm.input_dir, sequence, modality)
 
-                        logger.info(f'first item on screen: {first_for_question}')
-                        logger.info(f"first item's index: {idx1}")
-                        logger.info(f"first item's category: {sm.get_cat_from_stim(stims[idx1])}")
-                        logger.info(f'second item on screen: {second_for_question}')
-                        logger.info(f"second item's index: {idx2}")
-                        logger.info(f"second item's category: {sm.get_cat_from_stim(stims[idx2])}")
-                        logger.info(f"correct answer: {correct_answer}")
+                        cat1 = sm.get_cat_from_stim(stims[idx1])
+                        cat2 = sm.get_cat_from_stim(stims[idx2])
+                        trig1 = pm.triggers[cat1]['quest']
+                        trig2 = pm.triggers[cat2]['quest']
 
                         stim1 = visual.ImageStim(win=win,
                                                 image=stims[idx1],
@@ -271,6 +271,11 @@ def run(debugging=False):
                         
                         question_clock = core.Clock() # maybe useless
                         rt_clock = core.Clock()
+
+                        logger.info(f'first item on screen: {first_for_question}')
+                        logger.info(f"first item's index: {idx1}")
+                        logger.info(f"first item's category: {cat1}")
+                        
                         # for opacity in range(0, 101, 5): # Fading-in effect, REMOVED for now?
                         #     background.draw()
                         #     stim1.opacity = opacity / 100
@@ -287,7 +292,7 @@ def run(debugging=False):
                         q_high.draw()
                         arrow_l.draw()
                         arrow_r.draw()
-                        win.callOnFlip(port.setData, pm.triggers[sm.get_cat_from_stim(stims[idx1])])
+                        win.callOnFlip(pport.signal, trig1)
                         win.callOnFlip(question_clock.reset) # TODO: do we want the reset when the image starts to appear or when it's fully visible?
                         win.flip()
 
@@ -297,21 +302,27 @@ def run(debugging=False):
                             wait_2nd_stim = 5
                         core.wait(wait_2nd_stim) # justify 5s
 
+                        logger.info(f'second item on screen: {second_for_question}')
+                        logger.info(f"second item's index: {idx2}")
+                        logger.info(f"second item's category: {cat2}")
+
                         background.draw()
                         stim1.draw()
                         stim2.draw()
                         q_high.draw()
                         arrow_l.draw()
                         arrow_r.draw()
-                        win.callOnFlip(port.setData, pm.triggers[sm.get_cat_from_stim(stims[idx2])])
+                        win.callOnFlip(pport.signal, trig2)
                         win.callOnFlip(rt_clock.reset)
                         win.flip()
 
+                        logger.info(f"correct answer: {correct_answer}")
+                        
                         fl.check_escape(win, logger)
                         resp = event.waitKeys(keyList=['left', 'right'], timeStamped=rt_clock, maxWait=10)
 
                         if resp is None:
-                            port.setData(pm.triggers['incorrect'])
+                            pport.signal(pm.triggers['incorrect'])
                             key = 'NA'
                             rt = 'NA'
                             correct = False
@@ -321,13 +332,13 @@ def run(debugging=False):
                             key = resp[0][0]
                             rt = resp[0][1]
                             if key == correct_answer:
-                                port.setData(pm.triggers['correct'])
+                                pport.signal(pm.triggers['correct'])
                                 correct = True
                                 feedback_text = "Correct!"
                                 font_color = 'green'
                                 good_answers_count += 1
                             elif key == wrong_answer:
-                                port.setData(pm.triggers['incorrect'])
+                                pport.signal(pm.triggers['incorrect'])
                                 correct = False
                                 feedback_text = "Incorrect!"
                                 font_color = 'red'
