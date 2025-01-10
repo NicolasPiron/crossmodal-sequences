@@ -21,6 +21,7 @@ IMPORTANT: port to python 3.9 to work with https://fcbg-platforms.github.io/byte
 ## structural
 - change the question. More time to think about the order (1st item of the list apearing (5s), then one of the 5 other).
 - use frames instead of time. 
+- add jitter. 
 
 # to keep in mind :
 

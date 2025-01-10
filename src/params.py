@@ -43,8 +43,6 @@ triggers = {'animals':{'seq':1, 'quest':11}, # TODO: add more triggers (modaliti
                 'incorrect':102,
     }
 
-
-
 # organization
 n_amodal_items_per_cat = 6
 n_blocks = 4
@@ -52,12 +50,10 @@ n_trials = 3
 n_blocks_demo = 1
 n_trials_demo = 1
 
-seq_structures = {'A': [0, 1, 2, 3, 4, 5],
-                'B': [2, 4, 5, 1, 0, 3],
-                'C': [1, 4, 2, 0, 3, 5],
-                'D': [3, 0, 1, 5, 2, 4],
-                'E': [4, 1, 0, 5, 3, 2],
-                'F': [5, 2, 3, 4, 1, 0]
+seq_structures = {'A': [1, 4, 2, 5, 0, 3],
+                'B': [4, 5, 1, 3, 2, 0],
+                'C': [5, 3, 4, 0, 1, 2],
+                'D': [0, 2, 3, 1, 5, 4],
+                'E': [3, 0, 5, 2, 4, 1],
+                'F': [2, 1, 0, 4, 3, 5]
 }
-
-

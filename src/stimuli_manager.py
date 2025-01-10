@@ -2,6 +2,7 @@ import numpy as np
 import random
 import os
 import glob
+from itertools import permutations, combinations
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
@@ -56,6 +57,47 @@ def sample_until_no_dupes(arr, n=3):
                 duplicate = False
     return sample, new_temp
 
+def distribute_sequences_block(sequences: dict, n_blocks: int) -> dict:
+    ''' Distribute the sequences in the blocks with no repetitions'''
+    all_sequences_left = list(sequences.keys())*2
+    blocks = {f"block{i+1}": [] for i in range(n_blocks)}
+    for b in range(n_blocks):
+        if b==2:
+            seq_subset, all_sequences_left = sample_until_no_dupes(all_sequences_left) 
+        else:
+            seq_subset, all_sequences_left = sample_n_throw(all_sequences_left)
+        blocks[f"block{b+1}"] = seq_subset
+
+    return blocks
+
+def distribute_sequences_trial(sequence_names: list, n_trials: int) -> dict:
+    ''' Distribute the sequences in the trials with no repetitions of the positions of elements'''
+    orders = generate_orders_trial(sequence_names, n_trials)
+    trials = {f"trial{i+1}": None for i in range(n_trials)}
+    for i, _ in enumerate(trials):
+        trials[f"trial{i+1}"] =orders[i]*2
+    return trials
+
+def generate_orders_trial(sequence_names: list, n_trials: int) -> list:
+    ''' Return 3 sequences with unique positions of the elements'''
+
+    orders = list(permutations(sequence_names, n_trials))
+    pos_tracker = {key:0 for key in range(len(sequence_names))}
+    unique_pos_seq = list()
+    for order in orders:
+        unique_pos = 0
+        for i, seq in enumerate(order): # check if the position of the elements is unique
+            if pos_tracker[i] == seq:
+                continue
+            else:
+                unique_pos += 1
+        if unique_pos == 3: # if all the elements had unique positions
+            unique_pos_seq.append(order)
+            for i, seq in enumerate(order):
+                pos_tracker[i] = seq # update the position tracker
+
+    return unique_pos_seq
+
 def generate_sequences(input_dir, seq_structures, randomize=False):
     ''' Generate 6 unique amodal sequences. They are based on the fixed strucutres in seq_structures.
     The sequences are returned in a dict {name:order, ...}
@@ -84,14 +126,12 @@ def generate_sequences(input_dir, seq_structures, randomize=False):
     
     return sequences
 
-def generate_block_org(block_modalities=['img', 'txt'], sequences=list()):
-    ''' Generate the order of modalities and sequence types for a block'''
-    if len(sequences) == 0:
-        raise ValueError("Please provide the sequence names")
-    m_order = list(np.random.permutation(block_modalities)) * 3
-    s_order = list(np.random.permutation(sequences)) * 2
-    return m_order, s_order
-
+def generate_modalities(start_with_img=True):
+    ''' Generate the order of modalities for a block'''
+    if start_with_img:
+        return ['img', 'txt']*3
+    else:
+        return list(np.random.permutation(['img', 'txt'])) * 3
 
 def check_nstims(categories, input_dir):
     'Check if there is the same number of stim per class, raise error if not'
@@ -182,15 +222,60 @@ def test_generate_sequences(input_dir, seq_structures):
     print(f'When randomize=True, the number of similar items: {n_similar_items} out of {n_pairs} pairs ({1/(n_pairs/n_similar_items)*100:.2f}%), should be around 16.66%')
     print("\o/ All tests passed for generate_sequences()")
 
+### LEGACY FUNCTIONS
 
-if __name__ == '__main__':
-    input_dir = "data/input"
-    seq_structures = {'A': [0, 1, 2, 3, 4, 5],
-                'B': [2, 4, 5, 1, 0, 3],
-                'C': [1, 4, 2, 0, 3, 5],
-                'D': [3, 0, 1, 5, 2, 4],
-                'E': [4, 1, 0, 5, 3, 2],
-                'F': [5, 2, 3, 4, 1, 0]
-}
-    sequences = generate_sequences(input_dir, seq_structures, randomize=False)
-    print(sequences)
+# not used in the current version of the experiment
+def check_positions(blocks):
+    ''' Check if the sequences are not in the same position in two blocks'''
+    all_positions = {f"pos{i}": [] for i in range(len(blocks['block1']))}
+    for block in blocks.values():
+        for i, seq in enumerate(block):
+            all_positions[f"pos{i}"].append(seq)
+    for pos in all_positions.values():
+        if count_dupes(pos) > 0:
+            return False
+    return True
+    
+
+def check_distribution(blocks):
+    ''' Check if the distribution of 3 sequences blocks is not repeated.
+    e.g. if ABC is in block1, it should not be in block2 whatever the order'''
+     # NOT USED, its function is also passively covered by check_positions()
+    all_sequences = []
+    for block in blocks.values():
+        com = list(permutations(block))
+        com = [''.join(c) for c in com]
+        all_sequences += com
+    if count_dupes(all_sequences) > 0:
+        return False
+    return True
+
+def check_transitions(order1: str, order2: str):
+    ''' Check if the transitions between two sequences are unique'''
+    if order1 == order2:
+        return False
+    transitions = []
+    for order in (order1, order2):
+        order = ''.join(order)
+        for i in range(len(order)-1):
+            transitions.append(order[i:i+2])
+    if count_dupes(transitions) > 0:
+        return False
+    return True
+
+def generate_run_order(sequences, n_blocks=4):
+    ''' Generate the run order, with the constraints that each sequence is presented in two different blocks,
+     the sequences should not be in the same position in the two blocks, and all the transitions should be unique'''
+    continue_sampling = True
+    while continue_sampling:
+        blocks = distribute_sequences_block(sequences, n_blocks=n_blocks)
+        block_list = list(blocks.values())
+        pairs = list(combinations(block_list, 2))
+        n_pairs = len(pairs)
+        passed_test = 0
+        for pair in pairs:
+            if check_transitions(pair[0], pair[1]):
+                passed_test += 1
+        if (passed_test == n_pairs) and (check_positions(blocks)):
+                continue_sampling = False
+    return blocks

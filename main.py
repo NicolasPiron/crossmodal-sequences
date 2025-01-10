@@ -11,6 +11,8 @@ import src.params as pm
 import byte_triggers as bt
 from present_stims import present_stims
 
+# WARNING : do not forget to set randomization to True when real subjects are tested. 
+
 def run(debugging=False):
 
     exp_info = {'ID': '00',
@@ -100,9 +102,10 @@ def run(debugging=False):
         sm.check_nstims(pm.categories, pm.input_dir)
         sm.check_img_txt(pm.input_dir)
         amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, randomize=False) # False for testing purposes
-        unique_sequences_pool = list(amodal_sequences.keys())*2 # to keep track of which sequences are sampled 
+        run_org = sm.distribute_sequences_block(sequences=amodal_sequences, n_blocks=pm.n_blocks)
         logger.info('Sequences successfully generated.')
         logger.info('sequences: ' + str(amodal_sequences))
+        logger.info('run organization: ' + str(run_org))
     except Exception as exc:
         fl.log_exceptions(f"An error occurred during sequence generation: {exc}", logger, win)
 
@@ -116,15 +119,9 @@ def run(debugging=False):
 
                 items_used_for_questions = {} # this is initialized at the beginning of each block to avoid repetitions
 
-                if block_id == 3:
-                    # TODO: control transitions across trials, A will be followed by B only once etc.
-                    # needs to be done at 3rd iteration so that the last block has 3 unique sequences
-                    chosen_sequences, unique_sequences_pool = sm.sample_until_no_dupes(unique_sequences_pool) 
-                else:
-                    chosen_sequences, unique_sequences_pool = sm.sample_n_throw(unique_sequences_pool) # sample 3 sequences
+                chosen_sequences = run_org[f'block{block_id}']
                 logger.info(f'block: {block_id}')
                 logger.info(f'sequences: {chosen_sequences}')
-                logger.info(f'remaining unique_sequences_pool: {unique_sequences_pool}')
 
                 block_info = visual.TextStim(win=win,
                                 text=f'Bloc {block_id} \nAppuyez sur la touche ESPACE pour commencer!',
@@ -139,20 +136,23 @@ def run(debugging=False):
                 win.flip()
                 event.waitKeys(keyList=['space'])
 
+                # e.g. {'trial1': ['A', 'B', 'C', 'A', 'B', 'C'], 'trial2': ['C', 'A', 'B'...
+                block_org = sm.distribute_sequences_trial(sequence_names=chosen_sequences, n_trials=pm.n_trials)
+                logger.info(f'block organization: {block_org}')
+
                 for j in range(pm.n_trials): # 3 trials for a block
 
                     trial_id = j + 1
+                    trial_seq_org = block_org[f'trial{trial_id}'] # e.g. ['A', 'B', 'C', 'A', 'B', 'C']
+                    trial_mod_org = sm.generate_modalities(start_with_img=False) # e.g. ['img', 'txt', 'img', 'txt', 'img', 'txt']
 
-                    # Generate random order of modalities and sequence types for a block
-                    block_mod_org, block_seq_org = sm.generate_block_org(block_modalities=['img', 'txt'],
-                                                                        sequences=chosen_sequences)
                     logger.info(f'trial: {trial_id}')
-                    logger.info('block modalities order: ' + str(block_mod_org))
-                    logger.info('block sequences order: ' + str(block_seq_org))
+                    logger.info('block modalities order: ' + str(trial_mod_org))
+                    logger.info('block sequences order: ' + str(trial_seq_org))
 
-                    for k, modality in enumerate(block_mod_org): # loop over the 6 sequences (e.g. A, B, C * the two modalities (img, txt))
+                    for k, modality in enumerate(trial_mod_org): # loop over the 6 sequences (e.g. A, B, C * the two modalities (img, txt))
                         
-                        sequence_name = block_seq_org[k]
+                        sequence_name = trial_seq_org[k]
                         sequence = amodal_sequences[sequence_name]
                         stims = sm.get_stims(pm.input_dir, sequence, modality)
 
@@ -207,7 +207,7 @@ def run(debugging=False):
                                                     
                     # Ask questions. 3 questions, one for each amodal sequence. 
                     good_answers_count = 0
-                    for l, seq_name in enumerate(block_seq_org[0:3]):
+                    for l, seq_name in enumerate(trial_seq_org[0:3]):
 
                         question_id = l + 1 
         
