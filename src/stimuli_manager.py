@@ -6,6 +6,10 @@ from itertools import permutations, combinations
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
+def jitter_isi(value=0.2):
+    '''Return a random jittered inter-stimulus interval'''
+    return random.uniform(-value, value)
+
 def get_cat_from_stim(stim: str):
     '''Extract the category from a stimulus path'''
     return os.path.basename(os.path.dirname(stim))

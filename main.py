@@ -183,12 +183,11 @@ def run(debugging=False):
 
                             win.callOnFlip(pport.signal, trig)
                             win.flip()
-                            core.wait()
 
                             if debugging:
                                 core.wait(0.3)
                             else:
-                                core.wait(pm.stim_dur)
+                                core.wait(pm.stim_dur + sm.jitter_isi(pm.jitter))
 
                             # Display fixation cross
                             fix_cross = visual.TextStim(win=win,
@@ -203,7 +202,7 @@ def run(debugging=False):
                             if debugging:
                                 core.wait(0.5)
                             else:
-                                core.wait(pm.iti_dur)
+                                core.wait(pm.isi_dur)
                                                     
                     # Ask questions. 3 questions, one for each amodal sequence. 
                     good_answers_count = 0
@@ -391,21 +390,15 @@ def run(debugging=False):
                     
                     # encouraging message
                     if good_answers_count == 3:
-                        global_feedback = "Bravo! Vous avez répondu correctement à toutes les questions."
                         reward_max.play() 
-                    elif good_answers_count == 2:
-                        global_feedback = "Bien joué! Vous avez répondu correctement à 2 questions."
-                    elif good_answers_count == 1:
-                        global_feedback = "Pas mal! Vous avez répondu correctement à 1 question."
-                    else:
-                        global_feedback = "Dommage! Vous n'avez répondu correctement à aucune question."
+                    trial_feedback = pm.trial_feedback[good_answers_count]
 
                     if trial_id == 3:
                         block_info = f"Fin du bloc {block_id}. Le bloc suivant va commencer."
                     else:
                         block_info = f"L'essai suivant va commencer."
 
-                    fl.type_text(f"{global_feedback} \n{block_info}",
+                    fl.type_text(f"{trial_feedback} \n{block_info}",
                                 win,
                                 height=pm.text_height,
                                 background=background,
@@ -430,5 +423,5 @@ def run(debugging=False):
 
 if __name__ == '__main__':
     #present_stims()
-    run(debugging=True)
+    run(debugging=False)
     #run() 

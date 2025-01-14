@@ -1,14 +1,13 @@
-
-IMPORTANT: port to python 3.9 to work with https://fcbg-platforms.github.io/byte-triggers/index.html
-
 # to add : 
 
+- test functions for the block / trial org generation
 - rewards in random blocks / trials (in virtual points). 
 - associate sound to sequence (should be pseudo-randomized)
 - questions at the end of the run to test exaustive knowledge of the participants. 
 
 # to complete/modify :
 
+- remember that before modifying stims appearance, I need to be sure.
 ## stimuli :
 - cut characters' images to see only the face.
 - chose more dissimilar female characters. 
@@ -19,9 +18,9 @@ IMPORTANT: port to python 3.9 to work with https://fcbg-platforms.github.io/byte
 - control for luminosity diff. 
 
 ## structural
-- change the question. More time to think about the order (1st item of the list apearing (5s), then one of the 5 other).
-- use frames instead of time. 
-- add jitter. 
+- question modality distribution
+- first sequence of trial modality distribution
+- "which sequences stay grouped" distribution
 
 # to keep in mind :
 

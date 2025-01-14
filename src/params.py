@@ -1,4 +1,5 @@
 from psychopy import prefs
+import pickle
 
 # paths
 input_dir = "data/input"
@@ -20,8 +21,9 @@ text_height = 0.08
 img_size = 0.4
 img_bg_size = 0.41
 win_size = [1512, 982]
-iti_dur = 1.5
+isi_dur = 1.5
 stim_dur = 0.5
+jitter = 0.2
 prefs.hardware['audioLib'] = ['PTB']
 use_mock_port = True
 pport = None
@@ -56,4 +58,14 @@ seq_structures = {'A': [1, 4, 2, 5, 0, 3],
                 'D': [0, 2, 3, 1, 5, 4],
                 'E': [3, 0, 5, 2, 4, 1],
                 'F': [2, 1, 0, 4, 3, 5]
+}
+
+# cleaner way instead of hardcoding
+# seq_structures = pickle.load(open(f"{input_dir}/seq_structures/seq_structures.pkl", "rb"))
+
+trial_feedback = {
+    0:"Dommage! Vous n'avez répondu correctement à aucune question.",
+    1:"Pas mal! Vous avez répondu correctement à 1 question.",
+    2:"Bien joué! Vous avez répondu correctement à 2 questions.",
+    3:"Bravo! Vous avez répondu correctement à toutes les questions.",
 }

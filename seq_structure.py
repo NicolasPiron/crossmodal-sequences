@@ -1,4 +1,5 @@
 import random
+import pickle
 # Generate random order, with minimal overlap between sequences:
 # - the categories should have one position per sequence
 # - the transitions should be unique between sequences
@@ -69,11 +70,6 @@ optimized_sequences_list = [optimized_sequences[k] for k in sorted(optimized_seq
 for i, seq in enumerate(optimized_sequences_list):
     print(seq)
 
-# def append_sequences_to_file(sequences, filename="seq_structures.txt", variable_name="seq_structures"):
-#     with open(filename, "a") as file:
-#         file.write(f"{variable_name} = [\n")
-#         for seq in sequences:
-#             file.write(f"    {seq},\n")
-#         file.write("]\n")
-
-# append_sequences_to_file(optimized_sequences_list)
+# Save the optimized sequences to a file
+with open('seq_structure.pkl', 'wb') as f:
+    pickle.dump(optimized_sequences, f)
