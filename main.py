@@ -103,6 +103,9 @@ def run(debugging=False):
         sm.check_img_txt(pm.input_dir)
         amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, randomize=False) # False for testing purposes
         run_org = sm.distribute_sequences_block(sequences=amodal_sequences, n_blocks=pm.n_blocks)
+        # define modality of questions in each trial
+        question_mod_org = sm.distribute_mod_quest(n_blocks=pm.n_blocks, n_trials=pm.n_trials)
+        first_seq_mod_org = sm.distribute_mod_seq(n_block=pm.n_blocks)
         logger.info('Sequences successfully generated.')
         logger.info('sequences: ' + str(amodal_sequences))
         logger.info('run organization: ' + str(run_org))
@@ -144,7 +147,9 @@ def run(debugging=False):
 
                     trial_id = j + 1
                     trial_seq_org = block_org[f'trial{trial_id}'] # e.g. ['A', 'B', 'C', 'A', 'B', 'C']
-                    trial_mod_org = sm.generate_modalities(start_with_img=False) # e.g. ['img', 'txt', 'img', 'txt', 'img', 'txt']
+                    first_seq_mod = first_seq_mod_org[f'block{block_id}'][f'trial{trial_id}']
+                    start_with_img = True if first_seq_mod == 'img' else False
+                    trial_mod_org = sm.generate_modalities(start_with_img=start_with_img) 
 
                     logger.info(f'trial: {trial_id}')
                     logger.info('block modalities order: ' + str(trial_mod_org))
@@ -206,6 +211,7 @@ def run(debugging=False):
                                                     
                     # Ask questions. 3 questions, one for each amodal sequence. 
                     good_answers_count = 0
+                    question_modalities = question_mod_org[f'block{block_id}'][f'trial{trial_id}']
                     for l, seq_name in enumerate(trial_seq_org[0:3]):
 
                         question_id = l + 1 
@@ -238,7 +244,7 @@ def run(debugging=False):
                             wrong_answer = 'left'
 
                         # randomly select in which modality the question will be asked
-                        modality = np.random.choice(['img', 'txt'])
+                        modality = question_modalities[l]
                         stims = sm.get_stims(pm.input_dir, sequence, modality)
 
                         cat1 = sm.get_cat_from_stim(stims[idx1])

@@ -1,3 +1,4 @@
+from typing import Dict, List
 import numpy as np
 import random
 import os
@@ -6,11 +7,11 @@ from itertools import permutations, combinations
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
-def jitter_isi(value=0.2):
+def jitter_isi(value:float=0.2)-> float:
     '''Return a random jittered inter-stimulus interval'''
     return random.uniform(-value, value)
 
-def get_cat_from_stim(stim: str):
+def get_cat_from_stim(stim: str)-> str:
     '''Extract the category from a stimulus path'''
     return os.path.basename(os.path.dirname(stim))
 
@@ -74,13 +75,50 @@ def distribute_sequences_block(sequences: dict, n_blocks: int) -> dict:
 
     return blocks
 
-def distribute_sequences_trial(sequence_names: list, n_trials: int) -> dict:
+def distribute_sequences_trial(sequence_names: List[str], n_trials: int) -> dict:
     ''' Distribute the sequences in the trials with no repetitions of the positions of elements'''
     orders = generate_orders_trial(sequence_names, n_trials)
     trials = {f"trial{i+1}": None for i in range(n_trials)}
     for i, _ in enumerate(trials):
         trials[f"trial{i+1}"] =orders[i]*2
     return trials
+
+def distribute_mod_seq(n_block)-> Dict[str, List[str]]:
+    ''' Distribute the modality of the first sequence of each trial between the blocks'''
+    
+    block_layouts = [(2, 1)] * 2 + [(1, 2)] * 2
+    random.shuffle(block_layouts) # shuffle block layouts once
+    block_org = {f'block{i + 1}': None for i in range(n_block)}
+    for i, (img_count, txt_count) in enumerate(block_layouts):
+        org = ['img']*img_count + ['txt']*txt_count
+        random.shuffle(org) # shuffle the modalities
+        block_org[f'block{i + 1}'] = org
+    return block_org
+
+def distribute_mod_quest(n_blocks: int, n_trials: int) -> Dict[str, Dict[str, Dict[str, int]]]:
+    '''Fills a dictionary with the layout of trials question's modality.'''
+    
+    block_layouts = [(5, 4)] * 2 + [(4, 5)] * 2
+    trial_layouts = {'more_img': [(2, 1)] * 2 + [(1, 2)],
+                     'more_txt': [(2, 1)] + [(1, 2)] * 2}
+   
+    random.shuffle(block_layouts) # shuffle block layouts once
+    block_org = { # unreadable dict comprehension to map the modalities by trial. déso
+        f'block{i + 1}': {
+            f'trial{j + 1}': {'img': None, 'txt': None}
+            for j in range(n_trials)
+        }
+        for i in range(n_blocks)
+    }
+    # fill the block organization with the trial layouts
+    for i, (img_count, txt_count) in enumerate(block_layouts):
+        key = 'more_img' if img_count > txt_count else 'more_txt'
+        t_layout = trial_layouts[key]
+        random.shuffle(t_layout) # shuffle the three trial layouts' order
+        for j, (n_img, n_txt) in enumerate(t_layout):
+            block_org[f'block{i + 1}'][f'trial{j + 1}'] = ['img']*n_img + ['txt']*n_txt
+
+    return block_org
 
 def generate_orders_trial(sequence_names: list, n_trials: int) -> list:
     ''' Return 3 sequences with unique positions of the elements'''
@@ -170,8 +208,21 @@ def check_img_txt(input_dir):
 
 # TODO: write a small file that tests all the important functions and run it before the experiment
 
-def test_draw_two():
+def test_distribute_mod_quest():
+    # test because it's tidious to check visually
+    block_org = distribute_mod_quest(4, 3)
+    total_img = 0
+    total_txt = 0
+    for block in block_org.values():
+        for trial in block.values():
+            total_img += trial.count('img')
+            total_txt += trial.count('txt')
+    assert total_img == total_txt
+    assert total_img == 18
+    assert total_txt == 18
+    print('All tests passed for test_distribute_mod_quest()!')
 
+def test_draw_two():
     seq = [0, 1, 2, 3, 4, 5]
     ignore_idx = [0, 1, 3, 4]
     indices = draw_two(seq, ignore_idx)
@@ -225,8 +276,22 @@ def test_generate_sequences(input_dir, seq_structures):
     assert n_similar_items != n_pairs, f"When param randomize=True, the sequences should be different between iterations"
     print(f'When randomize=True, the number of similar items: {n_similar_items} out of {n_pairs} pairs ({1/(n_pairs/n_similar_items)*100:.2f}%), should be around 16.66%')
     print("\o/ All tests passed for generate_sequences()")
-
-### LEGACY FUNCTIONS
+ 
+ 
+'''
+*** LEGACY FUNCTIONS ****
+*      \_______/        *
+*  `.,-'\_____/`-.,'    *
+*   /`..'\ _ /`.,'\     *
+*  /  /`.,' `.,'\  \    *
+* /__/__/     \__\__\__ *
+* \  \  \     /  /  /   * 
+*  \  \,'`._,'`./  /    *
+*   \,'`./___\,'`./     *
+*  ,'`-./_____\,-'`.    *
+*      /       \        *
+*************************   
+'''
 
 # not used in the current version of the experiment
 def check_positions(blocks):

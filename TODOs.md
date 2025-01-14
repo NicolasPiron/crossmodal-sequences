@@ -18,9 +18,7 @@
 - control for luminosity diff. 
 
 ## structural
-- question modality distribution
-- first sequence of trial modality distribution
-- "which sequences stay grouped" distribution
+- "which sequences stay grouped" distribution. Above run level organization. 
 
 # to keep in mind :
 
