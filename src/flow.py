@@ -1,10 +1,9 @@
 from psychopy import visual, core, event
 import warnings
 
-
 def log_exceptions(message, logger, win):
     ''' Function to log exceptions and close the window '''
-    warnings.warn(f'ERROR : exception occured, see log file for details')
+    warnings.warn('ERROR : exception occured, see log file for details')
     logger.error(message)
     logger.error("Traceback details:", exc_info=True)
     win.close()

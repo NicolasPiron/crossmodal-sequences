@@ -1,5 +1,4 @@
 from typing import Dict, List
-import numpy as np
 import random
 import os
 import glob
@@ -15,13 +14,15 @@ def get_cat_from_stim(stim: str)-> str:
     '''Extract the category from a stimulus path'''
     return os.path.basename(os.path.dirname(stim))
 
-def draw_two(sequence, ignore_idx: list=None):
-    ''' Returns two items and their positions in the sequence. Will ignore some indices if provided'''
-    indices = random.sample(range(len(sequence)), 2)  # Get 2 unique indices
+def draw_two(ignore_idx: list=None):
+    ''' Returns two items and their positions in the sequence. This function has been reworked to sample only 
+    one item out of the 5 left. The 1st index will always be 0. '''
+    idx2 = random.sample(range(1, 6), 1)
     if ignore_idx:
-        while any([i in ignore_idx for i in indices]):
-            indices = random.sample(range(len(sequence)), 2)
-    return indices
+        while any([i in ignore_idx for i in idx2]):
+            idx2 = random.sample(range(1, 6), 1)
+    return (0, idx2[0])
+
 
 def get_stims(input_dir, sequence, modality):
     '''Return the paths to the stimuli in the sequence'''
@@ -140,21 +141,19 @@ def generate_orders_trial(sequence_names: list, n_trials: int) -> list:
 
     return unique_pos_seq
 
-def generate_sequences(input_dir, seq_structures, randomize=False):
+def generate_sequences(input_dir, seq_structures, seed=None):
     ''' Generate 6 unique amodal sequences. They are based on the fixed strucutres in seq_structures.
     The sequences are returned in a dict {name:order, ...}
     '''
-
+    if seed is not None:
+        random.seed(seed)
     all_cat = sorted(os.listdir(os.path.join(input_dir, 'stims')))
     all_cat = [cat for cat in all_cat if not cat.startswith('.')] # remove .DS_store
     all_stims = {}
     for cat in all_cat:
         cat_stims = glob.glob(os.path.join(input_dir, 'stims', cat, '*img.png'))
         cat_stims = [os.path.basename(stim).split('_')[0] for stim in cat_stims]
-        if randomize:
-            random.shuffle(cat_stims)
-        else:
-            sorted(cat_stims)
+        random.shuffle(cat_stims)
         all_stims[cat] = cat_stims
 
     sequences = {}
@@ -173,7 +172,7 @@ def generate_modalities(start_with_img=True):
     if start_with_img:
         return ['img', 'txt']*3
     else:
-        return list(np.random.permutation(['img', 'txt'])) * 3
+        return ['txt', 'img']*3
 
 def check_nstims(categories, input_dir):
     'Check if there is the same number of stim per class, raise error if not'
@@ -193,6 +192,185 @@ def check_img_txt(input_dir):
         txt = img.replace('img', 'txt')
         if txt not in all_txt:
             raise ValueError(f"Missing image for text stim {img}")
+
+ ############################################
+ #             Question functions           #
+
+
+def get_slot_pos(y_pos):
+    return [(-0.45, y_pos), (-0.15, y_pos), (0.15, y_pos), (0.45, y_pos), (0.75, y_pos)]
+
+def get_response_distance(correct_idx, response_idx, rt):
+    if rt == 'NA':
+        return rt
+    return abs(correct_idx - response_idx)
+
+def gen_slots(utils):
+    ...
+
+def get_feedback_args(distance):
+    '''Return the feedback text and color based on the distance between the correct and the response index.
+    The function also returns a boolean indicating if the response was correct'''
+    feedback_map = {
+        'NA': ("Trop lent!", "red", False, 0),
+        0: ("Correct!\n+ 3pt", "green", True, 3),
+        1: ("Presque!\n+ 1pt", "orange", False, 1)
+    }
+    return feedback_map.get(distance, ("Incorrect!\n+ 0pt", "red", False, 0))
+
+def get_trial_feedback(n_points, max_points):
+
+    if n_points == 0:
+        return f"Dommage! Vous n'avez gagné aucun point sur {max_points}."
+    elif n_points < max_points * 0.4:
+        return f"Pas mal, vous avez gagné {n_points} points sur {max_points}. Continuez à essayer !"
+    elif n_points < max_points * 0.7:
+        return f"Bien joué! Vous avez obtenu {n_points} points sur {max_points}." 
+    elif n_points < max_points:
+        return f"Excellent! Vous avez presque réussi avec {n_points} points sur {max_points}."
+    elif n_points == max_points:
+        return f"Bravo! Score parfait : {n_points} sur {max_points} !"
+    
+def get_reward_sound(reward_sounds, n_points):
+
+    if n_points == 0:
+        return None
+    elif n_points < 4:
+        return reward_sounds[0]
+    elif n_points < 7:
+        return reward_sounds[1]
+    else:
+        return reward_sounds[2]
+
+def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_clock, global_clock):
+    '''Run a question where the participant has to place the second item in the correct position.
+    NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
+    selectable)'''
+
+    wait_fun = utils['wait_fun']
+    event_fun = utils['event_fun']
+    clear_event_fun = utils['clear_event_fun']
+    trig_fun = utils['trig_fun']
+
+    def draw_slots(slots, utils):
+        utils['background'].draw()
+        for slot in slots:
+            slot["rect"].draw()
+            slot["highlight"].draw()
+        start_item.draw()
+    
+    def draw_instr(second_item_onset, instructions):
+        instr = instructions[0] if second_item_onset is None else instructions[1]
+        instr.draw()
+
+    def draw_second_item(end_item):
+        end_item.draw()
+
+    def send_trig(trig, utils, reset_clock=False):
+        utils['win'].callOnFlip(trig_fun, trig)
+        if reset_clock:
+            utils['win'].callOnFlip(rt_clock.reset)
+
+    def reset_highlight(slots):
+        for slot in slots:
+            slot["highlight"].opacity = 0
+
+    wt = 3
+    iterations = 0
+    current_index = 0
+    highlight_onset = None
+    second_item_onset = None
+    allow_key = False
+    global_clock.reset()
+    running = True
+
+    while running:
+
+        draw_slots(slots, utils)
+        draw_instr(second_item_onset=second_item_onset, instructions=instructions)
+
+        if iterations == 0:
+            send_trig(triggers[0], utils, reset_clock=False)
+
+        if global_clock.getTime() > wt:
+            draw_second_item(end_item)
+
+            if second_item_onset is None:
+                second_item_onset = global_clock.getTime()
+                send_trig(triggers[1], utils, reset_clock=True)
+                allow_key = True 
+
+        utils['win'].flip()
+
+        if not allow_key:
+            clear_event_fun()
+        else:
+            if highlight_onset is None:
+                slots[current_index]["highlight"].opacity = 1
+                highlight_onset = True
+
+            keys = event_fun()
+
+            if "left" in keys:
+                current_index = move_highlight(slots, current_index=current_index, direction="left")
+                utils['logger'].info(f"Left key pressed, current index: {current_index+1}")
+
+            if "right" in keys:
+                current_index = move_highlight(slots, current_index=current_index, direction="right")
+                utils['logger'].info(f"Right key pressed, current index: {current_index+1}")
+
+            if "space" in keys:
+                trig_fun(current_index+101) # trigger is the slot index + 101 TODO: change this to something adaptive
+                resp_time = rt_clock.getTime()
+                global_clock.reset() # reset the global clock to avoid time out
+                reset_highlight(slots)
+                end_item.pos = slots[current_index]["rect"].pos # move the end item to the selected slot
+                draw_slots(slots, utils)
+                draw_second_item(end_item)
+                utils['win'].flip()
+                utils['logger'].info('Space key pressed')
+                utils['logger'].info(f'Index selected: {current_index+1}')
+                utils['logger'].info(f'RT: {resp_time}')
+                wait_fun(1)
+                running = False
+
+            if "escape" in keys:
+                running = False
+
+            if global_clock.getTime() > 8:
+                trig_fun(200) 
+                utils['logger'].info('Time out')
+                utils['logger'].info(f'clock time: {global_clock.getTime()}')
+                running = False
+                resp_time = 'NA'
+                reset_highlight(slots)
+        
+        iterations += 1
+
+    return current_index+1, resp_time
+
+
+def move_highlight(slots, current_index, direction=None):
+
+    # Reset all highlights
+    for slot in slots:
+        slot["highlight"].opacity = 0
+    if direction == "left":
+        if current_index > 0:
+            current_index -= 1
+        else:
+            current_index = len(slots) - 1
+    elif direction == "right":
+        if current_index < len(slots) - 1:
+            current_index += 1
+        else:
+            current_index = 0
+    # Set the highlight on the current slot
+    slots[current_index]["highlight"].opacity = 1
+    return current_index
+
+
+
         
 """
 ********   TEST FUNCTIONS   *********
@@ -273,7 +451,7 @@ def test_generate_sequences(input_dir, seq_structures):
     
     pairs = get_2_items_same_pos(randomize=True, n=n)
     n_similar_items = sum([item1 == item2 for item1, item2 in pairs])
-    assert n_similar_items != n_pairs, f"When param randomize=True, the sequences should be different between iterations"
+    assert n_similar_items != n_pairs, "When param randomize=True, the sequences should be different between iterations"
     print(f'When randomize=True, the number of similar items: {n_similar_items} out of {n_pairs} pairs ({1/(n_pairs/n_similar_items)*100:.2f}%), should be around 16.66%')
     print("\o/ All tests passed for generate_sequences()")
  

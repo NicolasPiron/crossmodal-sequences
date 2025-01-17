@@ -4,11 +4,10 @@ import os
 import src.params as pm
 import src.flow as fl
 import src.stimuli_manager as sm
+from src.common import get_win_obj
 
 # This scripts shows the images and the related words to the participant
-
 def present_stims():
-
     # get all the stimuli
     all_items = glob.glob("data/input/stims/*/*.png")
     all_items = sorted(set([os.path.basename(item).split('_')[0] for item in all_items]))   
@@ -16,30 +15,17 @@ def present_stims():
     all_txt = sorted(glob.glob("data/input/stims/*/*txt.png"))
 
     # Create a window
-    win = visual.Window(size=pm.win_size,
-                        fullscr=True,
-                        color=(255, 255, 255),
-                        units='norm', 
-                        screen=pm.screen,)
-    win.mouseVisible = False
-    aspect_ratio = win.size[0] / win.size[1]
-
-    # Create the background image
-    background = visual.ImageStim(
-        win, 
-        size=(2, 2*aspect_ratio),
-        image=pm.bg_fn, 
-        units="norm"
-    )
+    win, background, aspect_ratio = get_win_obj(mouse_visible=False)
 
     with open(pm.instr_stimpres_fn, "r", encoding="utf-8") as file:
         instructions_text = file.read()
 
     fl.type_text(instructions_text,
-                win,
-                height=pm.text_height,
-                background=background,
-                t=pm.t)
+        win,
+        height=pm.text_height,
+        background=background,
+        t=pm.t,
+    )
 
     event.waitKeys(keyList=['space'])
 
@@ -73,7 +59,8 @@ def present_stims():
             color='black',
             height=pm.text_height,
             pos = (0, -0.8),
-            alignText="center" )
+            alignText="center"
+        )
 
         #background.draw()
         img_stim.draw()
@@ -84,13 +71,15 @@ def present_stims():
 
     # Tell the participant that the presentation is over, and to call the experimenter
     fl.type_text("La présentation est terminée, l'expérience peut commencer. Veuillez attendre l'expérimentateur.",
-                win,
-                height=pm.text_height,
-                background=background,
-                t=pm.t)
+        win,
+        height=pm.text_height,
+        background=background,
+        t=pm.t
+    )
 
     event.waitKeys(keyList=['space'])
     win.close()
+    core.quit()
 
 if __name__ == "__main__":
     sm.check_img_txt(pm.input_dir) 

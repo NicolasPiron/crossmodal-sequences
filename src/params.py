@@ -1,17 +1,16 @@
 from psychopy import prefs
-import pickle
+#import pickle
 
 # paths
 input_dir = "data/input"
+output_dir = "data/output"
 bg_fn = f"{input_dir}/background/background2.jpg"
 stim_bg_fn = f"{input_dir}/background/stim_bg.png"
 sound0_fn = f'{input_dir}/sounds/reward.mp3'
-sound1_fn = f'{input_dir}/sounds/reward1.mp3'
-sound2_fn = f'{input_dir}/sounds/reward2.mp3'
-sound3_fn = f'{input_dir}/sounds/reward3.mp3'
 instr_fn = f"{input_dir}/instructions/instructions.txt"
 instr_stimpres_fn = f"{input_dir}/instructions/instr_stim_pres.txt"
 fix_img_fn = f"{input_dir}/fix/fix.png"
+q_reward_fn = [f'{input_dir}/sounds/reward{i}.mp3' for i in range(1, 4)]
 
 # stim config
 t = 0.00001 # speed of text presentation
@@ -27,23 +26,14 @@ jitter = 0.2
 prefs.hardware['audioLib'] = ['PTB']
 use_mock_port = True
 pport = None
-categories = {'animals':0,
-                'bodyparts':1,
-                'characters':2,
-                'colors':3,
-                'landscapes':4,
-                'shapes':5,
-    }
-
-triggers = {'animals':{'seq':1, 'quest':11}, # TODO: add more triggers (modalities etc.)
-                'bodyparts':{'seq':2, 'quest':12},
-                'characters':{'seq':3, 'quest':13},
-                'colors':{'seq':4, 'quest':14},
-                'landscapes':{'seq':5, 'quest':15},
-                'shapes':{'seq':6, 'quest':16},
-                'correct':101,
-                'incorrect':102,
-    }
+categories = {
+    'animals':0,
+    'bodyparts':1,
+    'characters':2,
+    'colors':3,
+    'landscapes':4,
+    'shapes':5,
+}
 
 # organization
 n_amodal_items_per_cat = 6
@@ -52,20 +42,81 @@ n_trials = 3
 n_blocks_demo = 1
 n_trials_demo = 1
 
-seq_structures = {'A': [1, 4, 2, 5, 0, 3],
-                'B': [4, 5, 1, 3, 2, 0],
-                'C': [5, 3, 4, 0, 1, 2],
-                'D': [0, 2, 3, 1, 5, 4],
-                'E': [3, 0, 5, 2, 4, 1],
-                'F': [2, 1, 0, 4, 3, 5]
+seq_structures = {
+    'A': [1, 4, 2, 5, 0, 3],
+    'B': [4, 5, 1, 3, 2, 0],
+    'C': [5, 3, 4, 0, 1, 2],
+    'D': [0, 2, 3, 1, 5, 4],
+    'E': [3, 0, 5, 2, 4, 1],
+    'F': [2, 1, 0, 4, 3, 5]
 }
-
 # cleaner way instead of hardcoding
 # seq_structures = pickle.load(open(f"{input_dir}/seq_structures/seq_structures.pkl", "rb"))
 
-trial_feedback = {
-    0:"Dommage! Vous n'avez répondu correctement à aucune question.",
-    1:"Pas mal! Vous avez répondu correctement à 1 question.",
-    2:"Bien joué! Vous avez répondu correctement à 2 questions.",
-    3:"Bravo! Vous avez répondu correctement à toutes les questions.",
+# params for the in-task questions
+q_img_size = 0.2
+q_slot_size = q_img_size + 0.001
+hl_size = q_slot_size + 0.001
+y_pos = 0.25
+max_points = 9
+
+# params for additional_q.py
+bq_img_size = 0.1
+bq_hl_size = bq_img_size + 0.001
+
+triggers = {
+    'animals':{
+        'img':{
+            'seq':1,
+            'quest':11},
+        'txt':{
+            'seq':101,
+            'quest':111}
+    }, 
+    'bodyparts':{
+        'img':{
+            'seq':2,
+            'quest':12},
+        'txt':{
+            'seq':102,
+            'quest':112}
+    },
+    'characters':{
+        'img':{
+            'seq':3,
+            'quest':13},
+        'txt':{
+            'seq':103,
+            'quest':113}
+    },
+    'colors':{
+        'img':{
+            'seq':4,
+            'quest':14},
+        'txt':{
+            'seq':104,
+            'quest':114}
+    },
+    'landscapes':{
+        'img':{
+            'seq':5,
+            'quest':15},
+        'txt':{
+            'seq':105,
+            'quest':115}
+    },
+    'shapes':{
+        'img':{
+            'seq':6,
+            'quest':16},
+        'txt':{
+            'seq':106,
+            'quest':116}
+    },
+    'slot2':202,
+    'slot3':203,
+    'slot4':204,
+    'slot5':205,
+    'slot6':206,
+    'time_out':200,
 }
