@@ -1,11 +1,11 @@
 from psychopy import visual, event, core
 import random
 import glob
-import src.params as pm
-import src.bonus_q as bq
-import src.stimuli_manager as sm
-import src.flow as fl
-from src.common import get_win_obj
+import utils.params as pm
+import utils.bonus_q as bq
+import utils.stimuli_manager as sm
+import utils.flow as fl
+from utils.common import get_win_obj
 
 def ask_sequence(start_item, seq_name, subject_id, run_id, win=None):
     '''Ask the participant to place the images in the correct order and save the data'''
@@ -141,7 +141,7 @@ def ask_all_seq(subject_id, run_id, seed=None, win=None):
     for seq in amodal_sequences:
         seq_name = seq[0]
         start_item = amodal_sequences[seq][0]
-        win = ask_sequence(start_item, seq_name=seq_name, subject_id=subject_id, run_id=run_id, win=win)
+        win = ask_sequence(start_item, seq_name=seq_name, subject_id=subject_id, run_id=run_id, win=None)
     win.close
 
 if __name__ == "__main__":

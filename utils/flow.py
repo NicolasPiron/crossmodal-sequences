@@ -28,7 +28,8 @@ def type_text(text, win, color="black", height=0.08, background=None, t=0.03):
             win, text=displayed_text, font="Arial", color=color, 
             height=height, alignText="center", wrapWidth=1.5, units="norm"
         )
-        background.draw()
+        if background:
+            background.draw()
         text_stim.draw()
         win.flip()
         core.wait(t)

@@ -16,6 +16,7 @@ q_reward_fn = [f'{input_dir}/sounds/reward{i}.mp3' for i in range(1, 4)]
 t = 0.00001 # speed of text presentation
 screen = 0 
 seed = 42
+bg_color = (255, 255, 255)
 text_height = 0.08
 img_size = 0.4
 img_bg_size = 0.41
@@ -54,6 +55,8 @@ seq_structures = {
 # seq_structures = pickle.load(open(f"{input_dir}/seq_structures/seq_structures.pkl", "rb"))
 
 # params for the in-task questions
+viz_t = 5
+act_t = 5
 q_img_size = 0.2
 q_slot_size = q_img_size + 0.001
 hl_size = q_slot_size + 0.001

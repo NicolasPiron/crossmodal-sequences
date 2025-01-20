@@ -23,7 +23,6 @@ def draw_two(ignore_idx: list=None):
             idx2 = random.sample(range(1, 6), 1)
     return (0, idx2[0])
 
-
 def get_stims(input_dir, sequence, modality):
     '''Return the paths to the stimuli in the sequence'''
     stim_paths = []
@@ -193,9 +192,9 @@ def check_img_txt(input_dir):
         if txt not in all_txt:
             raise ValueError(f"Missing image for text stim {img}")
 
- ############################################
+#############################################
  #             Question functions           #
-
+#############################################
 
 def get_slot_pos(y_pos):
     return [(-0.45, y_pos), (-0.15, y_pos), (0.15, y_pos), (0.45, y_pos), (0.75, y_pos)]
@@ -242,7 +241,7 @@ def get_reward_sound(reward_sounds, n_points):
     else:
         return reward_sounds[2]
 
-def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_clock, global_clock):
+def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_clock, global_clock, viz_t=3, act_t=8):
     '''Run a question where the participant has to place the second item in the correct position.
     NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
     selectable)'''
@@ -275,12 +274,12 @@ def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_
         for slot in slots:
             slot["highlight"].opacity = 0
 
-    wt = 3
     iterations = 0
     current_index = 0
     highlight_onset = None
     second_item_onset = None
     allow_key = False
+    total_t = viz_t + act_t
     global_clock.reset()
     running = True
 
@@ -292,7 +291,7 @@ def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_
         if iterations == 0:
             send_trig(triggers[0], utils, reset_clock=False)
 
-        if global_clock.getTime() > wt:
+        if global_clock.getTime() > viz_t:
             draw_second_item(end_item)
 
             if second_item_onset is None:
@@ -337,7 +336,7 @@ def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_
             if "escape" in keys:
                 running = False
 
-            if global_clock.getTime() > 8:
+            if global_clock.getTime() > total_t:
                 trig_fun(200) 
                 utils['logger'].info('Time out')
                 utils['logger'].info(f'clock time: {global_clock.getTime()}')

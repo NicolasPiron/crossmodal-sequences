@@ -1,10 +1,10 @@
 from psychopy import visual, event, core
 import glob
 import os
-import src.params as pm
-import src.flow as fl
-import src.stimuli_manager as sm
-from src.common import get_win_obj
+import utils.params as pm
+import utils.flow as fl
+import utils.stimuli_manager as sm
+from utils.common import get_win_obj
 
 # This scripts shows the images and the related words to the participant
 def present_stims():
@@ -25,7 +25,7 @@ def present_stims():
         height=pm.text_height,
         background=background,
         t=pm.t,
-    )
+    ) 
 
     event.waitKeys(keyList=['space'])
 
@@ -34,7 +34,7 @@ def present_stims():
         item_txt = [txt for txt in all_txt if item in txt][0]
 
         win.flip()
-        core.wait(0.01) # to add a white flash between stims
+        core.wait(0.02) # to add a white flash between stims
         fl.check_escape(win)
 
         img_stim = visual.ImageStim(
