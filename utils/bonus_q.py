@@ -2,7 +2,7 @@ import os
 import numpy as np
 import random
 from psychopy import visual, core, event
-from src import stimuli_manager as sm
+from utils import stimuli_manager as sm
 
 
 def check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path):

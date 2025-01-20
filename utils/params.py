@@ -1,5 +1,4 @@
 from psychopy import prefs
-#import pickle
 
 # paths
 input_dir = "data/input"
@@ -13,7 +12,7 @@ fix_img_fn = f"{input_dir}/fix/fix.png"
 q_reward_fn = [f'{input_dir}/sounds/reward{i}.mp3' for i in range(1, 4)]
 
 # stim config
-t = 0.00001 # speed of text presentation
+t = 0.001 # speed of text presentation
 screen = 0 
 seed = 42
 bg_color = (255, 255, 255)
@@ -35,14 +34,12 @@ categories = {
     'landscapes':4,
     'shapes':5,
 }
-
 # organization
 n_amodal_items_per_cat = 6
 n_blocks = 4
 n_trials = 3
 n_blocks_demo = 1
 n_trials_demo = 1
-
 seq_structures = {
     'A': [1, 4, 2, 5, 0, 3],
     'B': [4, 5, 1, 3, 2, 0],
@@ -51,8 +48,6 @@ seq_structures = {
     'E': [3, 0, 5, 2, 4, 1],
     'F': [2, 1, 0, 4, 3, 5]
 }
-# cleaner way instead of hardcoding
-# seq_structures = pickle.load(open(f"{input_dir}/seq_structures/seq_structures.pkl", "rb"))
 
 # params for the in-task questions
 viz_t = 5

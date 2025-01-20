@@ -112,7 +112,7 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, win=None):
     
     return win
 
-def ask_all_seq(subject_id, run_id, seed=None, win=None):
+def ask_all_seq(subject_id, run_id, win=None):
 
     def shuffle_dict(d):
         items = list(d.items())
@@ -130,7 +130,7 @@ def ask_all_seq(subject_id, run_id, seed=None, win=None):
     else:
         _, background, _ = get_win_obj()
     
-    amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, seed=seed)
+    amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures)
     amodal_sequences = shuffle_dict(amodal_sequences)
 
     background.draw()
@@ -145,6 +145,6 @@ def ask_all_seq(subject_id, run_id, seed=None, win=None):
     win.close
 
 if __name__ == "__main__":
-    ask_all_seq(subject_id='01', run_id='01', seed=pm.seed)
+    ask_all_seq(subject_id='01', run_id='01')
     core.quit()
 

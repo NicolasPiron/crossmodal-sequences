@@ -9,14 +9,14 @@ def log_exceptions(message, logger, win):
     win.close()
     core.quit()
 
-def check_escape(win, logger=None):
+def check_escape(tools):
     ''' Function to check for the escape key '''
     keys = event.getKeys()
     if 'escape' in keys:
         print("--- Escape key pressed, exiting... ---")
-        if logger:
-            logger.info("Escape key pressed, exiting...")
-        win.close()
+        if tools['logger']:
+            tools['logger'].info("Escape key pressed, exiting...")
+        tools['win'].close()
         core.quit()
 
 def type_text(text, win, color="black", height=0.08, background=None, t=0.03):

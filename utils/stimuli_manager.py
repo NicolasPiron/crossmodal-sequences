@@ -140,12 +140,10 @@ def generate_orders_trial(sequence_names: list, n_trials: int) -> list:
 
     return unique_pos_seq
 
-def generate_sequences(input_dir, seq_structures, seed=None):
+def generate_sequences(input_dir, seq_structures):
     ''' Generate 6 unique amodal sequences. They are based on the fixed strucutres in seq_structures.
     The sequences are returned in a dict {name:order, ...}
     '''
-    if seed is not None:
-        random.seed(seed)
     all_cat = sorted(os.listdir(os.path.join(input_dir, 'stims')))
     all_cat = [cat for cat in all_cat if not cat.startswith('.')] # remove .DS_store
     all_stims = {}
@@ -197,15 +195,14 @@ def check_img_txt(input_dir):
 #############################################
 
 def get_slot_pos(y_pos):
+    ''' Return the positions of the slots in the trial question'''
     return [(-0.45, y_pos), (-0.15, y_pos), (0.15, y_pos), (0.45, y_pos), (0.75, y_pos)]
 
 def get_response_distance(correct_idx, response_idx, rt):
+    ''' Return the distance between the correct and the response index. If the response time is 'NA', return 'NA' '''
     if rt == 'NA':
         return rt
     return abs(correct_idx - response_idx)
-
-def gen_slots(utils):
-    ...
 
 def get_feedback_args(distance):
     '''Return the feedback text and color based on the distance between the correct and the response index.
@@ -218,7 +215,7 @@ def get_feedback_args(distance):
     return feedback_map.get(distance, ("Incorrect!\n+ 0pt", "red", False, 0))
 
 def get_trial_feedback(n_points, max_points):
-
+    '''Return the feedback text based on the number of points obtained'''
     if n_points == 0:
         return f"Dommage! Vous n'avez gagné aucun point sur {max_points}."
     elif n_points < max_points * 0.4:
@@ -231,75 +228,79 @@ def get_trial_feedback(n_points, max_points):
         return f"Bravo! Score parfait : {n_points} sur {max_points} !"
     
 def get_reward_sound(reward_sounds, n_points):
-
+    ''' Return the reward sound based on the number of points obtained for this question.'''
     if n_points == 0:
         return None
-    elif n_points < 4:
-        return reward_sounds[0]
-    elif n_points < 7:
+    elif n_points == 1:
         return reward_sounds[1]
-    else:
+    elif n_points == 3:
         return reward_sounds[2]
+    else:
+        raise ValueError(f"Invalid number of points: {n_points}")
 
-def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_clock, global_clock, viz_t=3, act_t=8):
+def run_question(tools, slots, start_item, end_item, instructions, triggers, rt_clock, global_clock, viz_t=3, act_t=8):
     '''Run a question where the participant has to place the second item in the correct position.
     NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
     selectable)'''
 
-    wait_fun = utils['wait_fun']
-    event_fun = utils['event_fun']
-    clear_event_fun = utils['clear_event_fun']
-    trig_fun = utils['trig_fun']
+    wait_fun = tools['wait_fun']
+    event_fun = tools['event_fun']
+    clear_event_fun = tools['clear_event_fun']
+    trig_fun = tools['trig_fun']
 
-    def draw_slots(slots, utils):
-        utils['background'].draw()
+    def draw_slots(slots, tools):
+        ''' Draw the slots, the start item and the background'''
+        tools['background'].draw()
         for slot in slots:
             slot["rect"].draw()
             slot["highlight"].draw()
         start_item.draw()
     
     def draw_instr(second_item_onset, instructions):
+        ''' Draw the instructions and the second item if it's time'''
         instr = instructions[0] if second_item_onset is None else instructions[1]
         instr.draw()
 
     def draw_second_item(end_item):
         end_item.draw()
 
-    def send_trig(trig, utils, reset_clock=False):
-        utils['win'].callOnFlip(trig_fun, trig)
+    def send_trig(trig, tools, reset_clock=False):
+        ''' Send a trigger and reset the reaction time clock if needed'''
+        tools['win'].callOnFlip(trig_fun, trig)
         if reset_clock:
-            utils['win'].callOnFlip(rt_clock.reset)
+            tools['win'].callOnFlip(rt_clock.reset)
 
     def reset_highlight(slots):
+        ''' Reset the highlight of all slots before the next question'''
         for slot in slots:
             slot["highlight"].opacity = 0
 
+    total_t = viz_t + act_t
     iterations = 0
     current_index = 0
     highlight_onset = None
     second_item_onset = None
     allow_key = False
-    total_t = viz_t + act_t
-    global_clock.reset()
     running = True
+    global_clock.reset()
 
     while running:
 
-        draw_slots(slots, utils)
+        draw_slots(slots, tools)
         draw_instr(second_item_onset=second_item_onset, instructions=instructions)
 
         if iterations == 0:
-            send_trig(triggers[0], utils, reset_clock=False)
+            send_trig(triggers[0], tools, reset_clock=False)
 
         if global_clock.getTime() > viz_t:
             draw_second_item(end_item)
 
             if second_item_onset is None:
                 second_item_onset = global_clock.getTime()
-                send_trig(triggers[1], utils, reset_clock=True)
+                send_trig(triggers[1], tools, reset_clock=True)
                 allow_key = True 
 
-        utils['win'].flip()
+        tools['win'].flip()
 
         if not allow_key:
             clear_event_fun()
@@ -312,11 +313,11 @@ def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_
 
             if "left" in keys:
                 current_index = move_highlight(slots, current_index=current_index, direction="left")
-                utils['logger'].info(f"Left key pressed, current index: {current_index+1}")
+                tools['logger'].info(f"Left key pressed, current index: {current_index+1}")
 
             if "right" in keys:
                 current_index = move_highlight(slots, current_index=current_index, direction="right")
-                utils['logger'].info(f"Right key pressed, current index: {current_index+1}")
+                tools['logger'].info(f"Right key pressed, current index: {current_index+1}")
 
             if "space" in keys:
                 trig_fun(current_index+101) # trigger is the slot index + 101 TODO: change this to something adaptive
@@ -324,12 +325,12 @@ def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_
                 global_clock.reset() # reset the global clock to avoid time out
                 reset_highlight(slots)
                 end_item.pos = slots[current_index]["rect"].pos # move the end item to the selected slot
-                draw_slots(slots, utils)
+                draw_slots(slots, tools)
                 draw_second_item(end_item)
-                utils['win'].flip()
-                utils['logger'].info('Space key pressed')
-                utils['logger'].info(f'Index selected: {current_index+1}')
-                utils['logger'].info(f'RT: {resp_time}')
+                tools['win'].flip()
+                tools['logger'].info('Space key pressed')
+                tools['logger'].info(f'Index selected: {current_index+1}')
+                tools['logger'].info(f'RT: {resp_time}')
                 wait_fun(1)
                 running = False
 
@@ -338,8 +339,8 @@ def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_
 
             if global_clock.getTime() > total_t:
                 trig_fun(200) 
-                utils['logger'].info('Time out')
-                utils['logger'].info(f'clock time: {global_clock.getTime()}')
+                tools['logger'].info('Time out')
+                tools['logger'].info(f'clock time: {global_clock.getTime()}')
                 running = False
                 resp_time = 'NA'
                 reset_highlight(slots)
@@ -350,7 +351,22 @@ def run_question(utils, slots, start_item, end_item, instructions, triggers, rt_
 
 
 def move_highlight(slots, current_index, direction=None):
+    ''' Move the highlight to the next or previous slot depending on direction
+    
+    Parameters
+    ----------
+    slots : list
+        List of slot objects
+    current_index : int
+        The current index of the highlighted slot
+    direction : str
+        The direction of the movement, either "left" or "right"
 
+    Returns
+    -------
+    int
+        The new index of the highlighted slot
+    '''
     # Reset all highlights
     for slot in slots:
         slot["highlight"].opacity = 0
@@ -367,9 +383,6 @@ def move_highlight(slots, current_index, direction=None):
     # Set the highlight on the current slot
     slots[current_index]["highlight"].opacity = 1
     return current_index
-
-
-
         
 """
 ********   TEST FUNCTIONS   *********
