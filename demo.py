@@ -1,8 +1,8 @@
 import os
 from psychopy.gui import DlgFromDict
 from psychopy import visual, core, event
-from src import flow as fl
-import src.params as pm
+from utils import flow as fl
+import utils.params as pm
 from bonus_question import ask_all_seq
 
 
