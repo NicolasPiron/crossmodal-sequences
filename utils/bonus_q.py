@@ -98,7 +98,7 @@ def toggle_image_selection(images, mouse, selected_image):
 def undo_image_placement(images, mouse):
     for img in images:
         if mouse.isPressedIn(img["stim"]) and img["placed"]:
-                    # Undo the placement
+            # Undo the placement
             slot = img["current_slot"]
             img["stim"].pos = img["orig_pos"]  # Return to original position
             img["placed"] = False

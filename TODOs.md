@@ -1,13 +1,17 @@
 # to add : 
 
 - test functions for the block / trial org generation
-- rewards in random blocks / trials (in virtual points). 
+- rewards in random blocks. 
 - associate sound to sequence (should be pseudo-randomized)
-- questions at the end of the run to test exaustive knowledge of the participants. 
 
 # to complete/modify :
 
-- remember that before modifying stims appearance, I need to be sure.
+## structural
+- "which sequences stay grouped" distribution. Above run level organization.
+- change question.
+- feedback no 1 pt.  
+
+
 ## stimuli :
 - cut characters' images to see only the face.
 - chose more dissimilar female characters. 
@@ -17,8 +21,6 @@
 - soften the diff between background and image background.
 - control for luminosity diff. 
 
-## structural
-- "which sequences stay grouped" distribution. Above run level organization. 
 
 # to keep in mind :
 

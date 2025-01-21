@@ -12,11 +12,13 @@ import byte_triggers as bt
 from utils.common import get_win_obj
 from bonus_question import ask_all_seq
 
-def execute_run(debugging=False):
+def execute_run(run_org, debugging=False):
     ''' Function to execute a run of the experiment. Need to be called twice for the full experiment.
 
     Parameters
     ----------
+    run_org : dict
+        Dictionary containing the organization of the sequences for each block. {run1: {block1: [sequence1, sequence2, ...]}}
     debugging : bool
         If True, the run will be executed in debugging mode, which means that the stimuli will be presented for a shorter duration.
 
@@ -31,13 +33,13 @@ def execute_run(debugging=False):
     logger = tools['logger']
     win = tools['win']
     exp_info = tools['exp_info']
+    run_org = run_org[f'run{int(exp_info["run"])}']
     # Present instructions 
     present_instructions(tools)
     # set a random seed for the sequence generation, to be able to reproduce the same sequences during questions
-    set_seed(tools)
     # Generate the multimodal sequences of items
     try:
-        amodal_sequences, run_org, question_mod_org, first_seq_mod_org = setup_sequence_distribution(tools)
+        amodal_sequences, question_mod_org, first_seq_mod_org = setup_sequence_distribution(tools)
     except Exception as exc:
         fl.log_exceptions(f"An error occurred during sequence generation: {exc}", logger, tools['win'])
 
@@ -100,7 +102,6 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
     logger.info('========== End of block ==========')
 
     return tracker
-        
 
 def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question_mod_org):
 
@@ -225,13 +226,6 @@ def present_instructions(tools):
     event.waitKeys(keyList=['space'])
     tools['logger'].info('Instructions successfully presented.')
 
-def set_seed(tools):
-    if tools['debugging']:
-        seed = pm.seed
-    else:
-        seed = random.randint(0, 1000)
-    random.seed(seed)
-    tools['logger'].info(f'Seed for sequence generation: {seed}')
 
 def setup_sequence_distribution(tools):
     ''' Function to generate the sequences of items and the modality organization for the questions.
@@ -255,7 +249,6 @@ def setup_sequence_distribution(tools):
     sm.check_nstims(pm.categories, pm.input_dir)
     sm.check_img_txt(pm.input_dir)
     amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures)
-    run_org = sm.distribute_sequences_block(sequences=amodal_sequences, n_blocks=pm.n_blocks)
     # define modality of questions in each trial
     question_mod_org = sm.distribute_mod_quest(n_blocks=pm.n_blocks, n_trials=pm.n_trials)
     first_seq_mod_org = sm.distribute_mod_seq(n_block=pm.n_blocks)
@@ -263,9 +256,8 @@ def setup_sequence_distribution(tools):
     logger = tools['logger']
     logger.info('Sequences successfully generated.')
     logger.info('sequences: ' + str(amodal_sequences))
-    logger.info('run organization: ' + str(run_org))
 
-    return amodal_sequences,run_org,question_mod_org,first_seq_mod_org
+    return amodal_sequences, question_mod_org, first_seq_mod_org
 
 def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, seq_name):
 
@@ -563,11 +555,22 @@ def clear_stuff(win):
     core.wait(0.5)
     event.clearEvents()
 
-def run_and_question(debugging=False):
-    exp_info, win = execute_run(debugging=debugging)
+def run_and_question(run_org, debugging=False):
+    exp_info, win = execute_run(run_org=run_org, debugging=debugging)
     clear_stuff(win)
     ask_all_seq(subject_id=exp_info['ID'], run_id=exp_info['run'], win=None)
     win.close()
+
+def pipeline(debugging=False):
+    if not debugging:
+        sm.set_seed()
+    else:
+        sm.set_seed(seed=pm.seed)
+    run_org = sm.generate_run_org()
+    run_and_question(run_org, debugging)
+    run_and_question(run_org, debugging)
+
+
 
 if __name__ == '__main__':
     

@@ -142,7 +142,7 @@ def ask_all_seq(subject_id, run_id, win=None):
         seq_name = seq[0]
         start_item = amodal_sequences[seq][0]
         win = ask_sequence(start_item, seq_name=seq_name, subject_id=subject_id, run_id=run_id, win=None)
-    win.close
+    win.close()
 
 if __name__ == "__main__":
     ask_all_seq(subject_id='01', run_id='01')
