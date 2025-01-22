@@ -1,0 +1,16 @@
+[project]
+name = "sequences"
+version = "0.1.0"
+description = "Tools and scripts for sequence learning experiment"
+authors = [
+    { name = "Nicolas Piron", email = "nicolas.piron@unige.ch" },
+]
+requires-python = "==3.9"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+    "seaborn",
+    "psychopy==2024.*",
+]
