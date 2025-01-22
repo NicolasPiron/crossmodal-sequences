@@ -1,6 +1,5 @@
 import os
 import logging
-import random
 from datetime import datetime
 from psychopy.gui import DlgFromDict
 from psychopy import visual, core, event, sound
@@ -34,9 +33,9 @@ def execute_run(run_org, debugging=False):
     win = tools['win']
     exp_info = tools['exp_info']
     run_org = run_org[f'run{int(exp_info["run"])}']
-    # Present instructions 
-    present_instructions(tools)
-    # set a random seed for the sequence generation, to be able to reproduce the same sequences during questions
+    logger.info(f'=============== Start of run {exp_info["run"]} ===============')
+    logger.info(f'run org: {exp_info["run"]}')
+    present_instructions(tools) # Present instructions 
     # Generate the multimodal sequences of items
     try:
         amodal_sequences, question_mod_org, first_seq_mod_org = setup_sequence_distribution(tools)
@@ -61,7 +60,15 @@ def execute_run(run_org, debugging=False):
                 tracker=tracker,
                 run_org=run_org
             )
-            tracker = execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, tracker, block_org)
+            tracker = execute_block(
+                tools, 
+                amodal_sequences, 
+                question_mod_org, 
+                first_seq_mod_org, 
+                tracker, 
+                block_org
+            )
+            
         logger.info(f'Run {tools["exp_info"]["run"]} completed successfully.')
         logger.info('=============== End of run ===============')
 
@@ -541,7 +548,9 @@ def present_stimulus(tools, sequence, l, stim, modality): # noqa: E741
     )
     background.draw()
     fix_cross.draw()
-    win.flip()
+    win.flip(clear_buffer=True)
+    del stim_image
+    
     if debugging:
         core.wait(0.5)
     else:
@@ -566,14 +575,11 @@ def pipeline(debugging=False):
         sm.set_seed()
     else:
         sm.set_seed(seed=pm.seed)
-    run_org = sm.generate_run_org()
+    run_org = sm.generate_run_org(pm.input_dir, pm.seq_structures)
     run_and_question(run_org, debugging)
     run_and_question(run_org, debugging)
-
-
+    core.quit()
 
 if __name__ == '__main__':
     
-    run_and_question()
-    run_and_question()
-    core.quit()
+    pipeline(debugging=False)

@@ -7,7 +7,7 @@ from collections import Counter
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
-def set_seed(seed):
+def set_seed(seed=None):
     if not seed:
         seed = random.randint(0, 1000)
     random.seed(seed)
@@ -95,7 +95,7 @@ def distribute_sequences_block(sequences: dict, n_blocks: int) -> dict:
 
     return blocks
 
-def generate_run_org(sequences) -> dict:
+def generate_run_org(input_dir, seq_structures) -> dict:
     ''' Generate the organization of sequences in the runs. The function returns a dict with the blocks of each run.
     It controls that the sequences are well distributed between the two runs, with minimal overlap'''
 
@@ -134,6 +134,7 @@ def generate_run_org(sequences) -> dict:
                 two_rep_pairs = True
         return blocks, rep_pairs, unrep_seq
     
+    sequences = generate_sequences(input_dir, seq_structures)
     # Generate two runs with unique repeated pairs between them (e.g. run1 AB, CF and run2 ED, FA)
     running = True
     while running:
@@ -149,7 +150,6 @@ def generate_run_org(sequences) -> dict:
         unique_repetitions = True if counter==2 else False
         if unique_repetitions and four_standalone_seq:
             running = False
-            print(unrep_seq1, unrep_seq2)
 
     run_org = {'run1': blocks1, 'run2': blocks2}
     return run_org
@@ -352,6 +352,9 @@ def run_question(tools, slots, start_item, end_item, instructions, triggers, rt_
         for slot in slots:
             slot["highlight"].opacity = 0
 
+    if tools['debugging']:
+        viz_t = 0.1
+        act_t = 0.1
     total_t = viz_t + act_t
     iterations = 0
     current_index = 0
