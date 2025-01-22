@@ -26,6 +26,9 @@ def draw_two(ignore_idx: list=None):
     one item out of the 5 left. The 1st index will always be 0. '''
     idx2 = random.sample(range(1, 6), 1)
     if ignore_idx:
+        # added this condition to avoid infinite loop. Because there are 5 items and 6 questions -> 1 item will be asked twice. 
+        if len(ignore_idx) == 5:
+            return (0, idx2[0])
         while any([i in ignore_idx for i in idx2]):
             idx2 = random.sample(range(1, 6), 1)
     return (0, idx2[0])
@@ -289,7 +292,6 @@ def get_feedback_args(distance):
     feedback_map = {
         'NA': ("Trop lent!", "red", False, 0),
         0: ("Correct!\n+ 3pt", "green", True, 3),
-        1: ("Presque!\n+ 1pt", "orange", False, 1)
     }
     return feedback_map.get(distance, ("Incorrect!\n+ 0pt", "red", False, 0))
 
@@ -315,7 +317,7 @@ def get_reward_sound(reward_sounds, n_points):
     else:
         raise ValueError(f"Invalid number of points: {n_points}")
 
-def run_question(tools, slots, start_item, end_item, instructions, triggers, rt_clock, global_clock, viz_t=3, act_t=8):
+def run_question(tools, slots, start_item, end_item, instructions, rt_clock, global_clock, t_act):
     '''Run a question where the participant has to place the second item in the correct position.
     NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
     selectable)'''
@@ -325,64 +327,37 @@ def run_question(tools, slots, start_item, end_item, instructions, triggers, rt_
     clear_event_fun = tools['clear_event_fun']
     trig_fun = tools['trig_fun']
 
-    def draw_slots(slots, tools):
+    def draw_all():
         ''' Draw the slots, the start item and the background'''
         tools['background'].draw()
+        instructions.draw()
         for slot in slots:
             slot["rect"].draw()
             slot["highlight"].draw()
         start_item.draw()
-    
-    def draw_instr(second_item_onset, instructions):
-        ''' Draw the instructions and the second item if it's time'''
-        instr = instructions[0] if second_item_onset is None else instructions[1]
-        instr.draw()
-
-    def draw_second_item(end_item):
+        start_item.draw()
         end_item.draw()
-
-    def send_trig(trig, tools, reset_clock=False):
-        ''' Send a trigger and reset the reaction time clock if needed'''
-        tools['win'].callOnFlip(trig_fun, trig)
-        if reset_clock:
-            tools['win'].callOnFlip(rt_clock.reset)
 
     def reset_highlight(slots):
         ''' Reset the highlight of all slots before the next question'''
         for slot in slots:
             slot["highlight"].opacity = 0
 
-    if tools['debugging']:
-        viz_t = 0.1
-        act_t = 0.1
-    total_t = viz_t + act_t
+    # if tools['debugging']:
+    #     t_act = 2
     iterations = 0
     current_index = 0
     highlight_onset = None
-    second_item_onset = None
-    allow_key = False
     running = True
     global_clock.reset()
 
     while running:
 
-        draw_slots(slots, tools)
-        draw_instr(second_item_onset=second_item_onset, instructions=instructions)
-
-        if iterations == 0:
-            send_trig(triggers[0], tools, reset_clock=False)
-
-        if global_clock.getTime() > viz_t:
-            draw_second_item(end_item)
-
-            if second_item_onset is None:
-                second_item_onset = global_clock.getTime()
-                send_trig(triggers[1], tools, reset_clock=True)
-                allow_key = True 
-
+        draw_all()
         tools['win'].flip()
 
-        if not allow_key:
+        if iterations == 0:
+            wait_fun(0.01)
             clear_event_fun()
         else:
             if highlight_onset is None:
@@ -405,8 +380,7 @@ def run_question(tools, slots, start_item, end_item, instructions, triggers, rt_
                 global_clock.reset() # reset the global clock to avoid time out
                 reset_highlight(slots)
                 end_item.pos = slots[current_index]["rect"].pos # move the end item to the selected slot
-                draw_slots(slots, tools)
-                draw_second_item(end_item)
+                draw_all()
                 tools['win'].flip()
                 tools['logger'].info('Space key pressed')
                 tools['logger'].info(f'Index selected: {current_index+1}')
@@ -417,7 +391,7 @@ def run_question(tools, slots, start_item, end_item, instructions, triggers, rt_
             if "escape" in keys:
                 running = False
 
-            if global_clock.getTime() > total_t:
+            if global_clock.getTime() > t_act:
                 trig_fun(200) 
                 tools['logger'].info('Time out')
                 tools['logger'].info(f'clock time: {global_clock.getTime()}')
@@ -428,7 +402,6 @@ def run_question(tools, slots, start_item, end_item, instructions, triggers, rt_
         iterations += 1
 
     return current_index+1, resp_time
-
 
 def move_highlight(slots, current_index, direction=None):
     ''' Move the highlight to the next or previous slot depending on direction
@@ -464,6 +437,18 @@ def move_highlight(slots, current_index, direction=None):
     slots[current_index]["highlight"].opacity = 1
     return current_index
         
+def fade_out(tools, instr, obj, clock, f_dur):
+    ''' Fade out the object'''
+    clock.reset()
+    while clock.getTime() < f_dur:
+        elapsed_time = clock.getTime()
+        opacity = 1.0 - (elapsed_time / f_dur)  # linear fade-out
+        obj.opacity = max(0.0, opacity)  # ensure opacity doesn't go below 0
+        tools['background'].draw()
+        instr.draw()
+        obj.draw()
+        tools['win'].flip()
+
 """
 ********   TEST FUNCTIONS   *********
 *                                     *

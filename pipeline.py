@@ -4,11 +4,11 @@ from datetime import datetime
 from psychopy.gui import DlgFromDict
 from psychopy import visual, core, event, sound
 import pandas as pd
-from utils import stimuli_manager as sm
-from utils import flow as fl
-from utils import params as pm
+from sequences import stimuli_manager as sm
+from sequences import flow as fl
+from sequences import params as pm
 import byte_triggers as bt
-from utils.common import get_win_obj
+from sequences.common import get_win_obj
 from bonus_question import ask_all_seq
 
 def execute_run(run_org, debugging=False):
@@ -113,8 +113,22 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
 def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question_mod_org):
 
     tracker['points_attributed'] = 0 # reset points for each trial
+    tracker['used_items'] = {} # reset used items for each trial
     question_modalities = question_mod_org[f'block{tracker["block_id"]}'][f'trial{tracker["trial_id"]}']
     
+    intructions = visual.TextStim(
+        tools['win'], 
+        text="Préparez vous pour les questions",
+        font="Arial",
+        color='black',
+        height=pm.text_height,
+        alignText="center"
+    )
+    tools['background'].draw()
+    intructions.draw()
+    tools['win'].flip()
+    tools['wait_fun'](2)
+
     for m, seq_name in enumerate(trial_seq_org[0:3]):
         tracker['question_id'] = m + 1
         tracker = ask_trial_question(
@@ -332,7 +346,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         for pos in slot_positions
     ]
 
-    text_q_lst = ["Visualisez la sequence", "Placez l'item à la bonne position"]
+    text_q_lst = ["Visualisez la sequence", "Quelle position?", "Placez l'item"]
     instructions = [visual.TextStim(win=win,
             text=txt,
             pos=(0, 0.55),
@@ -342,32 +356,61 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         ) for txt in text_q_lst
     ]
 
-    start_item= visual.ImageStim(
+    cue_viz = visual.ImageStim(
+        win,
+        image=stims[idx1],
+        pos=(0, 0),
+        size=(pm.img_size, pm.img_size * aspect_ratio),
+    )
+    cue_seq = visual.ImageStim(
         win,
         image=stims[idx1],
         pos=(-0.75, pm.y_pos),
         size=(pm.q_img_size, pm.q_img_size * aspect_ratio),
     )
-
-    end_item = visual.ImageStim(
+    target_viz = visual.ImageStim(
+        win,
+        image=stims[idx2],
+        pos=(0, 0),
+        size=(pm.img_size, pm.img_size * aspect_ratio),
+    ) 
+    target_seq = visual.ImageStim(
         win,
         image=stims[idx2],
         pos=(0, -pm.y_pos),
         size=(pm.q_img_size, pm.q_img_size * aspect_ratio),
     ) 
-
     rt_clock = core.Clock()
+    fade_clock = core.Clock()
+    t_viz_cue = pm.t_viz_cue
+    t_viz_target = pm.t_viz_target
+    if tools['debugging']:
+        t_viz_cue = 5
+        t_viz_target = 5
+
+    background.draw()
+    cue_viz.draw()
+    instructions[0].draw()
+    win.callOnFlip(tools['pport'].signal, triggers[0])
+    win.flip()
+    sm.fade_out(tools, instructions[0], cue_viz, clock=fade_clock, f_dur=t_viz_cue)
+
+    background.draw()
+    target_viz.draw()
+    instructions[1].draw()
+    win.callOnFlip(tools['pport'].signal, triggers[1])
+    win.flip()
+    core.wait(t_viz_target)
+
     resp_idx, rt = sm.run_question(
         tools=tools,
         slots=slots,
-        start_item=start_item,
-        end_item=end_item,
-        instructions=instructions,
-        triggers=triggers,
+        start_item=cue_seq,
+        end_item=target_seq,
+        instructions=instructions[2],
         rt_clock=rt_clock,
         global_clock=core.Clock(),
-        viz_t=pm.viz_t,
-        act_t=pm.act_t
+        t_act=pm.t_act,
     )
 
     distance = sm.get_response_distance(resp_idx, idx2, rt)
@@ -548,8 +591,7 @@ def present_stimulus(tools, sequence, l, stim, modality): # noqa: E741
     )
     background.draw()
     fix_cross.draw()
-    win.flip(clear_buffer=True)
-    del stim_image
+    win.flip()
     
     if debugging:
         core.wait(0.5)

@@ -50,8 +50,9 @@ seq_structures = {
 }
 
 # params for the in-task questions
-viz_t = 5
-act_t = 5
+t_viz_cue = 5
+t_viz_target = 5
+t_act = 2
 q_img_size = 0.2
 q_slot_size = q_img_size + 0.001
 hl_size = q_slot_size + 0.001

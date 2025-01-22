@@ -1,10 +1,10 @@
 from psychopy import visual, event, core
 import glob
 import os
-import utils.params as pm
-import utils.flow as fl
-import utils.stimuli_manager as sm
-from utils.common import get_win_obj
+import sequences.params as pm
+import sequences.flow as fl
+import sequences.stimuli_manager as sm
+from sequences.common import get_win_obj
 
 # This scripts shows the images and the related words to the participant
 def present_stims():

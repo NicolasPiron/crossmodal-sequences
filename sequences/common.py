@@ -1,5 +1,5 @@
 from psychopy import visual
-import utils.params as pm
+import sequences.params as pm
 
 def get_win_obj(mouse_visible=False):
     '''Create a window object and a background object'''

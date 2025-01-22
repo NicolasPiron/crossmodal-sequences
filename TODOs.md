@@ -1,15 +1,14 @@
 # to add : 
 
-- test functions for the block / trial org generation
+- IMPORTANT : think about a way of setting a seed per participant to keep the same structures if something crashes
+
 - rewards in random blocks. 
 - associate sound to sequence (should be pseudo-randomized)
 
 # to complete/modify :
 
 ## structural
-- "which sequences stay grouped" distribution. Above run level organization.
-- change question.
-- feedback no 1 pt.  
+- more instructions
 
 
 ## stimuli :
