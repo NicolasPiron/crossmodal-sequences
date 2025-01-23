@@ -1,8 +1,5 @@
 # to add : 
 
-- IMPORTANT : think about a way of setting a seed per participant to keep the same structures if something crashes
-
-
 - rewards in random blocks. 
 - associate sound to sequence (should be pseudo-randomized)
 

@@ -165,8 +165,8 @@ def ask_all_seq(subject_id, run_id, win_dict=None, set_seed=False):
     win.close()
 
 if __name__ == "__main__":
-    subject_id = '00'
-    run_id = '02'
+    subject_id = '1001'
+    run_id = '01'
     ask_all_seq(
         subject_id=subject_id, 
         run_id=run_id, 

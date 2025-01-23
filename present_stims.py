@@ -15,7 +15,6 @@ def present_stims():
     all_txt = sorted(glob.glob("data/input/stims/*/*txt.png"))
 
     # Create a window
-
     win_dict = get_win_dict()
     win = win_dict['win']
     background = win_dict['background']

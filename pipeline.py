@@ -173,13 +173,13 @@ def initialize_run(debugging):
     logfn = f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}_cmseq-logs-{datetime.now().strftime('%Y%m%d-%H%M')}.log"
     os.makedirs(out_dir, exist_ok=True)
 
-    if len(os.listdir(out_dir)) > 0: # check if the output directory is empty to avoid overwriting data
-        if not debugging:
-            print(f"--- Output directory {out_dir} is not empty, exiting... ---")
-            quit()
-        else:
-            if exp_info['run'] == '01':
-                os.system(f"rm -r {out_dir}/*") # remove all files in the output directory
+    # if len(os.listdir(out_dir)) > 0: # check if the output directory is empty to avoid overwriting data
+    #     if not debugging:
+    #         print(f"--- Output directory {out_dir} is not empty, exiting... ---")
+    #         quit()
+    #     else:
+    #         if exp_info['run'] == '01':
+    #             os.system(f"rm -r {out_dir}/*") # remove all files in the output directory
 
     bt.add_file_handler(
         logfn,
