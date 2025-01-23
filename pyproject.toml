@@ -13,4 +13,6 @@ dependencies = [
     "matplotlib",
     "seaborn",
     "psychopy==2024.*",
+    "byte-triggers",
+    "ruff"
 ]

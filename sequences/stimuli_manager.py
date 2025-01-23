@@ -4,14 +4,33 @@ import os
 import glob
 from itertools import permutations, combinations
 from collections import Counter
+import sequences.params as pm
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
-def set_seed(seed=None):
-    if not seed:
+def w_and_set_seed(debugging:bool, out_dir:str)-> int:
+    ''' Write a seed in a file and return it. If debugging is True, the seed is fixed to the one in params.py'''
+    if debugging:
+        seed = pm.seed
+    else:
         seed = random.randint(0, 1000)
     random.seed(seed)
+    w_seed(out_dir, seed)
     return seed
+
+def w_seed(out_dir:str, seed:int)-> None:
+    ''' Write the seed in a file'''
+    seed_fn = f"{out_dir}/seed.txt"
+    with open(seed_fn, "w") as f:
+        f.write(str(seed))
+
+def r_and_set_seed(out_dir:str)-> None:
+    ''' Read the seed from a file and set it'''
+    seed_fn = f"{out_dir}/seed.txt"
+    with open(seed_fn, "r") as f:
+        seed = f.read()
+    random.seed(int(seed))
+    return int(seed)
 
 def jitter_isi(value:float=0.2)-> float:
     '''Return a random jittered inter-stimulus interval'''
@@ -317,7 +336,7 @@ def get_reward_sound(reward_sounds, n_points):
     else:
         raise ValueError(f"Invalid number of points: {n_points}")
 
-def run_question(tools, slots, start_item, end_item, instructions, rt_clock, global_clock, t_act):
+def run_question(tools, slots, start_item, end_item, rt_clock, global_clock, t_act):
     '''Run a question where the participant has to place the second item in the correct position.
     NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
     selectable)'''
@@ -330,7 +349,6 @@ def run_question(tools, slots, start_item, end_item, instructions, rt_clock, glo
     def draw_all():
         ''' Draw the slots, the start item and the background'''
         tools['background'].draw()
-        instructions.draw()
         for slot in slots:
             slot["rect"].draw()
             slot["highlight"].draw()
@@ -437,7 +455,7 @@ def move_highlight(slots, current_index, direction=None):
     slots[current_index]["highlight"].opacity = 1
     return current_index
         
-def fade_out(tools, instr, obj, clock, f_dur):
+def fade_out(tools, obj, clock, f_dur):
     ''' Fade out the object'''
     clock.reset()
     while clock.getTime() < f_dur:
@@ -445,7 +463,6 @@ def fade_out(tools, instr, obj, clock, f_dur):
         opacity = 1.0 - (elapsed_time / f_dur)  # linear fade-out
         obj.opacity = max(0.0, opacity)  # ensure opacity doesn't go below 0
         tools['background'].draw()
-        instr.draw()
         obj.draw()
         tools['win'].flip()
 

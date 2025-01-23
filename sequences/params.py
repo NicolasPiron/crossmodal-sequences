@@ -6,7 +6,10 @@ output_dir = "data/output"
 bg_fn = f"{input_dir}/background/background2.jpg"
 stim_bg_fn = f"{input_dir}/background/stim_bg.png"
 sound0_fn = f'{input_dir}/sounds/reward.mp3'
-instr_fn = f"{input_dir}/instructions/instructions.txt"
+instr1_fn = f"{input_dir}/instructions/instructions_p1.txt"
+instr2_fn = f"{input_dir}/instructions/instructions_p2.txt"
+instr_q_fn = f"{input_dir}/instructions/instructions_q.txt"
+instr_bonus_fn = f"{input_dir}/instructions/instructions_bonus.txt"
 instr_stimpres_fn = f"{input_dir}/instructions/instr_stim_pres.txt"
 fix_img_fn = f"{input_dir}/fix/fix.png"
 q_reward_fn = [f'{input_dir}/sounds/reward{i}.mp3' for i in range(1, 4)]
@@ -50,9 +53,13 @@ seq_structures = {
 }
 
 # params for the in-task questions
+t_prep = 2
 t_viz_cue = 5
 t_viz_target = 5
 t_act = 2
+t_fb = 1
+t_iqi = 0.5
+t_post_q = 3
 q_img_size = 0.2
 q_slot_size = q_img_size + 0.001
 hl_size = q_slot_size + 0.001

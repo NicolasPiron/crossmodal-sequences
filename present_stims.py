@@ -4,7 +4,7 @@ import os
 import sequences.params as pm
 import sequences.flow as fl
 import sequences.stimuli_manager as sm
-from sequences.common import get_win_obj
+from sequences.common import get_win_dict
 
 # This scripts shows the images and the related words to the participant
 def present_stims():
@@ -15,7 +15,12 @@ def present_stims():
     all_txt = sorted(glob.glob("data/input/stims/*/*txt.png"))
 
     # Create a window
-    win, background, aspect_ratio = get_win_obj(mouse_visible=False)
+
+    win_dict = get_win_dict()
+    win = win_dict['win']
+    background = win_dict['background']
+    aspect_ratio = win_dict['aspect_ratio']
+    win.mouseVisible = False
 
     with open(pm.instr_stimpres_fn, "r", encoding="utf-8") as file:
         instructions_text = file.read()

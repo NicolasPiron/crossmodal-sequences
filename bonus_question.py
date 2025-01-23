@@ -4,19 +4,16 @@ import glob
 import sequences.params as pm
 import sequences.bonus_q as bq
 import sequences.stimuli_manager as sm
-import sequences.flow as fl
-from sequences.common import get_win_obj
+from sequences.common import get_win_dict
 
-def ask_sequence(start_item, seq_name, subject_id, run_id, win=None):
+def ask_sequence(start_item, seq_name, subject_id, run_id, win_dict):
     '''Ask the participant to place the images in the correct order and save the data'''
 
     out_path = f"{pm.output_dir}/sub-{subject_id}/sub-{subject_id}_run{run_id}_bonus_{seq_name}.csv"
 
-    if win is None:
-        win, background, aspect_ratio = get_win_obj(mouse_visible=True)
-    else:
-        _, background, _ = get_win_obj(mouse_visible=True)
-        aspect_ratio = win.size[0] / win.size[1]
+    win = win_dict['win']
+    background = win_dict['background']
+    aspect_ratio = win_dict['aspect_ratio']
 
     instr2 = visual.TextStim(
         win, text="De quels items est composée cette séquence?", pos=(0, 0.7), color="black"
@@ -110,41 +107,71 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, win=None):
         if "escape" in event.getKeys():
             running = False
     
-    return win
+    return win_dict
 
-def ask_all_seq(subject_id, run_id, win=None):
+def ask_all_seq(subject_id, run_id, win_dict=None, set_seed=False):
 
     def shuffle_dict(d):
         items = list(d.items())
         random.shuffle(items)
         return dict(items)
     
-    line1 = f"Run {run_id} terminé. Vous allez maintenant devoir reconstruire les séquences."
-    line2 = "\nPour sélectionner un item, cliquez dessus. Pour le placer dans une case, cliquez sur la case."
-    line3 = "\nUtilisez sur la touche ESPACE pour valider votre réponse, ou la touche ESC pour recommencer."
-    line4 = "\n\nAppuyez sur ESPACE pour continuer."
-    txt = line1 + line2 + line3 + line4
+    if win_dict is None:
+        win_dict = get_win_dict()
 
-    if win is None:
-        win, background, _ = get_win_obj()
-    else:
-        _, background, _ = get_win_obj()
-    
+    win = win_dict['win']
+    background = win_dict['background']
+    win.mouseVisible = True
+
+   
+    out_dir = f"{pm.output_dir}/sub-{subject_id}"
+    try:
+        sm.r_and_set_seed(out_dir)
+    except FileNotFoundError as e:
+        print(e)
+
     amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures)
     amodal_sequences = shuffle_dict(amodal_sequences)
 
     background.draw()
+    win.flip() 
+
+    with open(pm.instr_bonus_fn, "r", encoding="utf-8") as file:
+        txt = file.read()
+
+    instructions = visual.TextStim(
+        win, 
+        text=txt, 
+        pos=(0, 0), 
+        color="black"
+    )
+
+    background.draw()
+    instructions.draw()
     win.flip()
-    fl.type_text(text=txt, win=win, background=background, t=pm.t)
     event.waitKeys(keyList=['space'])
 
     for seq in amodal_sequences:
         seq_name = seq[0]
         start_item = amodal_sequences[seq][0]
-        win = ask_sequence(start_item, seq_name=seq_name, subject_id=subject_id, run_id=run_id, win=None)
+        ask_sequence(
+            start_item, 
+            seq_name=seq_name, 
+            subject_id=subject_id,
+            run_id=run_id,
+            win_dict=win_dict
+        )
+        
     win.close()
 
 if __name__ == "__main__":
-    ask_all_seq(subject_id='01', run_id='01')
+    subject_id = '00'
+    run_id = '02'
+    ask_all_seq(
+        subject_id=subject_id, 
+        run_id=run_id, 
+        win_dict=None, 
+        set_seed=True
+    )
     core.quit()
 

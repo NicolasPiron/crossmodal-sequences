@@ -1,0 +1,4 @@
+Après avoir vu une série de séquences, vous devrez répondre à des questions. Chaque question se passe en trois temps : 
+- Le premier item présenté sert à identifier la séquence. 
+- Le deuxième est la cible, vous devez vous souvenir de sa position. 
+- Une fois les deux items présentés, vous devez placer le second item à la bonne position. Vous avez 2 secondes pour le faire. 

@@ -1,7 +1,7 @@
 from psychopy import visual
 import sequences.params as pm
 
-def get_win_obj(mouse_visible=False):
+def get_win_dict(mouse_visible=False):
     '''Create a window object and a background object'''
     win = visual.Window(
         size=pm.win_size,
@@ -17,5 +17,5 @@ def get_win_obj(mouse_visible=False):
         image=pm.bg_fn,
         units="norm"
     )
-    win.mouseVisible = mouse_visible
-    return win, background, aspect_ratio
+    d = {"win": win, "background": background, "aspect_ratio": aspect_ratio}
+    return d

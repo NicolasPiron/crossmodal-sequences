@@ -1,0 +1,1 @@
+Run terminé. Vous allez maintenant devoir reconstruire les séquences. Pour sélectionner un item, cliquez dessus. Pour le placer dans une case, cliquez sur la case. Utilisez la touche ESPACE pour valider votre réponse, ou la touche ESC pour recommencer. Vous ne pouvez recommencer que lorsque vous avez placé les 5 items.

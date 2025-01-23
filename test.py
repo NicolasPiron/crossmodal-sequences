@@ -1,9 +1,6 @@
-from time import sleep
-from time import time
+import os
 
-t1 = time()
-for i in range(10, 0, -1):
-    # update opacity function
-    sleep(5/10)
-t2 = time()
-print(t2 - t1)
+first_img_cat = 'data/input/stims/characters/elsa_img.png'
+first_img = os.path.basename(first_img_cat.split(".")[0].split("_")[0])
+
+print(first_img)

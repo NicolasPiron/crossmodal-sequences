@@ -8,7 +8,7 @@ from sequences import stimuli_manager as sm
 from sequences import flow as fl
 from sequences import params as pm
 import byte_triggers as bt
-from sequences.common import get_win_obj
+from sequences.common import get_win_dict
 from bonus_question import ask_all_seq
 
 def execute_run(run_org, debugging=False):
@@ -28,9 +28,8 @@ def execute_run(run_org, debugging=False):
     win : psychopy.visual.Window
         The window object used for the experiment. It is fed to the bonus question module. 
     '''
-    tools = initialize_experiment(debugging)
+    tools = initialize_run(debugging)
     logger = tools['logger']
-    win = tools['win']
     exp_info = tools['exp_info']
     run_org = run_org[f'run{int(exp_info["run"])}']
     logger.info(f'=============== Start of run {exp_info["run"]} ===============')
@@ -72,7 +71,7 @@ def execute_run(run_org, debugging=False):
         logger.info(f'Run {tools["exp_info"]["run"]} completed successfully.')
         logger.info('=============== End of run ===============')
 
-        return exp_info, win
+        return tools
     
     except Exception as exc:
         fl.log_exceptions(f'An error occurred during the run {tools["exp_info"]["run"]}, block {tracker["block_id"]}: {exc}', 
@@ -84,25 +83,25 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
     for j in range(pm.n_trials): # 3 trials for a block
         tracker['trial_id'] = j + 1
         trial_seq_org, trial_mod_org = initialize_trial_sequences(
-                    tools=tools,
-                    tracker=tracker,
-                    first_seq_mod_org=first_seq_mod_org,
-                    block_org=block_org
-                )
+            tools=tools,
+            tracker=tracker,
+            first_seq_mod_org=first_seq_mod_org,
+            block_org=block_org
+        )
         present_sequences(
-                    tools=tools,
-                    amodal_sequences=amodal_sequences, 
-                    trial_seq_org=trial_seq_org, 
-                    trial_mod_org=trial_mod_org
-                )
+            tools=tools,
+            amodal_sequences=amodal_sequences, 
+            trial_seq_org=trial_seq_org, 
+            trial_mod_org=trial_mod_org
+        )
                             
         tracker = handle_questioning(
-                    tools=tools, 
-                    amodal_sequences=amodal_sequences, 
-                    tracker=tracker, 
-                    trial_seq_org=trial_seq_org, 
-                    question_mod_org=question_mod_org
-                )
+            tools=tools, 
+            amodal_sequences=amodal_sequences, 
+            tracker=tracker, 
+            trial_seq_org=trial_seq_org, 
+            question_mod_org=question_mod_org
+        )
         
     logger = tools['logger']
     logger.info(f'Block {tracker["block_id"]} completed successfully.')
@@ -113,21 +112,30 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
 def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question_mod_org):
 
     tracker['points_attributed'] = 0 # reset points for each trial
-    tracker['used_items'] = {} # reset used items for each trial
+    #tracker['used_items'] = {} # reset used items for each trial
     question_modalities = question_mod_org[f'block{tracker["block_id"]}'][f'trial{tracker["trial_id"]}']
+    t_prep = pm.t_prep
+    t_iqi = pm.t_iqi
+    if tools['debugging']:
+        t_prep = 0.01
+        t_iqi = 0.01
     
-    intructions = visual.TextStim(
-        tools['win'], 
-        text="Préparez vous pour les questions",
-        font="Arial",
-        color='black',
+    with open(pm.instr_q_fn, "r", encoding="utf-8") as file:
+        text = file.read()
+
+    instructions = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0.55),
         height=pm.text_height,
-        alignText="center"
-    )
+        color='black',
+        units='norm'
+    ) 
+
     tools['background'].draw()
-    intructions.draw()
+    instructions.draw()
     tools['win'].flip()
-    tools['wait_fun'](2)
+    core.wait(t_prep)
 
     for m, seq_name in enumerate(trial_seq_org[0:3]):
         tracker['question_id'] = m + 1
@@ -141,9 +149,9 @@ def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question
         out_dir = tools['out_dir']
         run_id = tools['exp_info']['run']
         pd.DataFrame(tracker['data']).to_csv(f"{out_dir}/sub-{run_id}_run-{run_id}.csv", index=False)
-        core.wait(0.5)
+        core.wait(t_iqi)
                 
-        # encouraging message
+    # encouraging message
     provide_trial_feedback(
         tools=tools, 
         tracker=tracker
@@ -151,7 +159,7 @@ def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question
 
     return tracker
 
-def initialize_experiment(debugging):
+def initialize_run(debugging):
     exp_info = {
         'ID': '00',
         'run': '01',
@@ -170,7 +178,8 @@ def initialize_experiment(debugging):
             print(f"--- Output directory {out_dir} is not empty, exiting... ---")
             quit()
         else:
-            os.system(f"rm -r {out_dir}/*") # remove all files in the output directory
+            if exp_info['run'] == '01':
+                os.system(f"rm -r {out_dir}/*") # remove all files in the output directory
 
     bt.add_file_handler(
         logfn,
@@ -188,22 +197,29 @@ def initialize_experiment(debugging):
     else:
         pport = bt.ParallelPortTrigger(pm.pport, delay=10)
 
+    if exp_info['run'] == '01': # if the experiment crashes, the sequences will be the same
+        seed = sm.w_and_set_seed(debugging, out_dir)
+    else:
+        seed = sm.r_and_set_seed(out_dir)
+
     logger = logging.getLogger()
     logger.info('Experiment started.')
+    logger.info(f'Seed: {seed}')
     logger.info(f'Participant ID: {exp_info["ID"]}')
     logger.info(f'Run number: {exp_info["run"]}')
 
     reward_max = sound.Sound(pm.sound0_fn)
     q_reward_sounds = [sound.Sound(fn) for fn in pm.q_reward_fn]
-    win, background, aspect_ratio = get_win_obj(mouse_visible=False)
+    win_dict = get_win_dict()
+    win_dict['win'].mouseVisible = False
 
     tools = {
         'debugging': debugging,
         'pport': pport,
         'logger': logger,
-        'win': win,
-        'aspect_ratio': aspect_ratio,
-        'background': background,
+        'win': win_dict['win'],
+        'aspect_ratio': win_dict['aspect_ratio'],
+        'background': win_dict['background'],
         'wait_fun': core.wait,
         'event_fun': event.getKeys,
         'trig_fun': pport.signal,
@@ -222,6 +238,13 @@ def present_instructions(tools):
     win = tools['win']
     background = tools['background']
 
+    def present(instr):
+        background.draw()
+        instr.draw()
+        win.flip()
+        fl.check_escape(tools)
+        event.waitKeys(keyList=['space'])
+
     if exp_info['run'] == '01': # only present the instructions at the first run
         fl.type_text(
             "Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer.",
@@ -232,19 +255,27 @@ def present_instructions(tools):
         )
         event.waitKeys(keyList=['space'])
 
-    with open(pm.instr_fn, "r", encoding="utf-8") as file:
-        instructions_text = file.read()
+    instr1, instr2 = [
+        open(fn, "r", encoding="utf-8").read()
+        for fn in [
+            pm.instr1_fn, 
+            pm.instr2_fn
+            ]
+    ]
 
-    instructions = visual.TextStim(
-        win, text=instructions_text, font="Arial", color='black',  height=pm.text_height,
+    instr_objects = [visual.TextStim(
+        win,
+        text=instr, 
+        font="Arial", 
+        color='black',  
+        height=pm.text_height,
         alignText="center" 
-    )
+        ) for instr in [instr1, instr2]
+    ]
 
-    background.draw()
-    instructions.draw()
-    win.flip()
-    fl.check_escape(tools)
-    event.waitKeys(keyList=['space'])
+    for instr in instr_objects:
+        present(instr)
+
     tools['logger'].info('Instructions successfully presented.')
 
 
@@ -346,16 +377,6 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         for pos in slot_positions
     ]
 
-    text_q_lst = ["Visualisez la sequence", "Quelle position?", "Placez l'item"]
-    instructions = [visual.TextStim(win=win,
-            text=txt,
-            pos=(0, 0.55),
-            height=pm.text_height,
-            color='black',
-            units='norm'
-        ) for txt in text_q_lst
-    ]
-
     cue_viz = visual.ImageStim(
         win,
         image=stims[idx1],
@@ -384,20 +405,22 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     fade_clock = core.Clock()
     t_viz_cue = pm.t_viz_cue
     t_viz_target = pm.t_viz_target
+    t_act = pm.t_act
+    t_fb = pm.t_fb
     if tools['debugging']:
-        t_viz_cue = 5
-        t_viz_target = 5
+        t_viz_cue = 0.01
+        t_viz_target = 0.01
+        t_act = 0.01
+        t_fb = 0.01
 
     background.draw()
     cue_viz.draw()
-    instructions[0].draw()
     win.callOnFlip(tools['pport'].signal, triggers[0])
     win.flip()
-    sm.fade_out(tools, instructions[0], cue_viz, clock=fade_clock, f_dur=t_viz_cue)
+    sm.fade_out(tools, cue_viz, clock=fade_clock, f_dur=t_viz_cue)
 
     background.draw()
     target_viz.draw()
-    instructions[1].draw()
     win.callOnFlip(tools['pport'].signal, triggers[1])
     win.flip()
     core.wait(t_viz_target)
@@ -407,10 +430,9 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         slots=slots,
         start_item=cue_seq,
         end_item=target_seq,
-        instructions=instructions[2],
         rt_clock=rt_clock,
         global_clock=core.Clock(),
-        t_act=pm.t_act,
+        t_act=t_act,
     )
 
     distance = sm.get_response_distance(resp_idx, idx2, rt)
@@ -436,7 +458,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     win.flip()
     if reward_sound:
         reward_sound.play()
-    core.wait(1)
+    core.wait(t_fb)
     date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     tracker['data'].append({
         'ID': exp_info['ID'],
@@ -501,6 +523,10 @@ def initialize_block(tools, tracker, run_org):
 
 def provide_trial_feedback(tools, tracker):
 
+    t_post_q = pm.t_post_q
+    if tools['debugging']:
+        t_post_q = 0.01
+
     if tracker['points_attributed'] > 6:
         tools['reward_max'].play() 
     trial_feedback = sm.get_trial_feedback(n_points=tracker['points_attributed'], max_points=pm.max_points)
@@ -523,11 +549,7 @@ def provide_trial_feedback(tools, tracker):
     tools['background'].draw()
     text_stim.draw()
     tools['win'].flip()
-
-    if tools['debugging']:
-        core.wait(0.1)
-    else:
-        core.wait(3)
+    core.wait(t_post_q)
 
 def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
     logger = tools['logger']
@@ -555,6 +577,11 @@ def present_stimulus(tools, sequence, l, stim, modality): # noqa: E741
     win = tools['win']
     aspect_ratio = tools['aspect_ratio']
     background = tools['background']
+    t_stim = pm.stim_dur + sm.jitter_isi(pm.jitter)
+    t_isi = pm.isi_dur
+    if debugging:
+        t_stim = 0.01
+        t_isi = 0.01
 
     stim_cat = sm.get_cat_from_stim(stim)
     trig = pm.triggers[stim_cat][modality]['seq'] # keys are 'img'/'txt' and 'seq'/'quest'
@@ -575,11 +602,7 @@ def present_stimulus(tools, sequence, l, stim, modality): # noqa: E741
 
     win.callOnFlip(pport.signal, trig)
     win.flip()
-
-    if debugging:
-        core.wait(0.3)
-    else:
-        core.wait(pm.stim_dur + sm.jitter_isi(pm.jitter))
+    core.wait(t_stim)
 
     # Display fixation cross
     fix_cross = visual.TextStim(win=win,
@@ -592,11 +615,7 @@ def present_stimulus(tools, sequence, l, stim, modality): # noqa: E741
     background.draw()
     fix_cross.draw()
     win.flip()
-    
-    if debugging:
-        core.wait(0.5)
-    else:
-        core.wait(pm.isi_dur)
+    core.wait(t_isi)
 
 #########################
 # highest level functions
@@ -607,16 +626,14 @@ def clear_stuff(win):
     event.clearEvents()
 
 def run_and_question(run_org, debugging=False):
-    exp_info, win = execute_run(run_org=run_org, debugging=debugging)
-    clear_stuff(win)
-    ask_all_seq(subject_id=exp_info['ID'], run_id=exp_info['run'], win=None)
-    win.close()
+    tools = execute_run(run_org=run_org, debugging=debugging)
+    clear_stuff(tools['win'])
+    ask_all_seq(subject_id=tools['exp_info']['ID'], 
+                run_id=tools['exp_info']['run'], 
+                win_dict=tools,
+                set_seed=False)
 
 def pipeline(debugging=False):
-    if not debugging:
-        sm.set_seed()
-    else:
-        sm.set_seed(seed=pm.seed)
     run_org = sm.generate_run_org(pm.input_dir, pm.seq_structures)
     run_and_question(run_org, debugging)
     run_and_question(run_org, debugging)
@@ -624,4 +641,4 @@ def pipeline(debugging=False):
 
 if __name__ == '__main__':
     
-    pipeline(debugging=False)
+    pipeline(debugging=True)

@@ -4,12 +4,11 @@ import random
 from psychopy import visual, core, event
 from sequences import stimuli_manager as sm
 
-
 def check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path):
     if occ_count == 5:
         resp = confirm_slot_filling(start_item_img, images, win, background)
         if resp[0] == "space":
-            running = save_slot_data(slots, out_path)
+            running = save_slot_data(start_item_img, slots, out_path)
         elif resp[0] == "escape":
             reset_image_positions(images, slots)
             running = True
@@ -43,9 +42,14 @@ def reset_image_positions(images, slots):
         slot["image"] = None
         slot["rect"].opacity = 1
 
-def save_slot_data(slots, out_path):
+def save_slot_data(start_item_img, slots, out_path):
     running = False
+    first_img_path = start_item_img.image
+    first_img_cat = sm.get_cat_from_stim(first_img_path)
+    first_img = os.path.basename(first_img_path.split(".")[0].split("_")[0])
     with open(out_path, "w") as f:
+        f.write("slot,stimulus,category\n")
+        f.write(f"0,{first_img},{first_img_cat}\n")
         for i, slot in enumerate(slots):
             stim_path = slot["image"]["stim"].image
             stim_name = os.path.basename(

@@ -1,0 +1,3 @@
+Vous allez devoir apprendre l'ordre d'items dans 6 différentes séquences. Chaque séquence sera présentée plusieurs fois, des fois avec des images, des fois avec des mots. Chaque séquence est composée de 6 items, chacun faisant partie d'une catégorie différente. 
+
+Par exemple, il ne peut y avoir qu'une seule couleur par séquence. 
