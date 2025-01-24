@@ -1,6 +1,7 @@
-import os
+from pipeline import test_pipeline
+import faulthandler
+faulthandler.enable()
 
-first_img_cat = 'data/input/stims/characters/elsa_img.png'
-first_img = os.path.basename(first_img_cat.split(".")[0].split("_")[0])
-
-print(first_img)
+if __name__ == "__main__":
+    for _ in range(100):
+        test_pipeline()
