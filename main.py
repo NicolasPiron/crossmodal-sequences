@@ -1,4 +1,4 @@
 from pipeline import pipeline
 
 if __name__ == "__main__":
-    pipeline(debugging=True) 
+    pipeline(debugging=False)

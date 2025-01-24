@@ -1,4 +1,5 @@
 from psychopy import visual, event, core
+from pathlib import Path
 import random
 import glob
 import sequences.params as pm
@@ -9,7 +10,7 @@ from sequences.common import get_win_dict
 def ask_sequence(start_item, seq_name, subject_id, run_id, win_dict):
     '''Ask the participant to place the images in the correct order and save the data'''
 
-    out_path = f"{pm.output_dir}/sub-{subject_id}/sub-{subject_id}_run{run_id}_bonus_{seq_name}.csv"
+    out_path = Path(f"{pm.output_dir}/sub-{subject_id}/sub-{subject_id}_run{run_id}_bonus_{seq_name}.csv")
 
     win = win_dict['win']
     background = win_dict['background']
@@ -18,9 +19,9 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, win_dict):
     instr2 = visual.TextStim(
         win, text="De quels items est composée cette séquence?", pos=(0, 0.7), color="black"
     )
-    img_files = glob.glob(pm.input_dir + "/stims/*/*img.png")
+    img_files = glob.glob(str(pm.input_dir) + "/stims/*/*img.png")
     random.shuffle(img_files)
-    start_item_path = glob.glob(pm.input_dir + f"/stims/*/{start_item}_img.png")[0]
+    start_item_path = glob.glob(str(pm.input_dir) + f"/stims/*/{start_item}_img.png")[0]
     img_files.remove(start_item_path)
     positions = bq.gen_img_positions()
 
@@ -165,8 +166,8 @@ def ask_all_seq(subject_id, run_id, win_dict=None, set_seed=False):
     win.close()
 
 if __name__ == "__main__":
-    subject_id = '1001'
-    run_id = '01'
+    subject_id = input('Enter subject ID: ')
+    run_id = input('Enter run ID: ')
     ask_all_seq(
         subject_id=subject_id, 
         run_id=run_id, 

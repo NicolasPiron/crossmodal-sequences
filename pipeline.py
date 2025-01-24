@@ -148,7 +148,8 @@ def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question
         )
         out_dir = tools['out_dir']
         run_id = tools['exp_info']['run']
-        pd.DataFrame(tracker['data']).to_csv(f"{out_dir}/sub-{run_id}_run-{run_id}.csv", index=False)
+        subject_id = tools['exp_info']['ID']
+        pd.DataFrame(tracker['data']).to_csv(f"{out_dir}/sub-{subject_id}_run-{run_id}.csv", index=False)
         core.wait(t_iqi)
                 
     # encouraging message
@@ -408,10 +409,10 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     t_act = pm.t_act
     t_fb = pm.t_fb
     if tools['debugging']:
-        t_viz_cue = 1
-        t_viz_target = 1
-        t_act = 5
-        t_fb = 1
+        t_viz_cue = 0.01
+        t_viz_target = 0.01
+        t_act = 0.01
+        t_fb = 0.01
 
     background.draw()
     cue_viz.draw()
@@ -641,7 +642,7 @@ def test_pipeline(debugging=True):
 def pipeline(debugging=False):
     run_org = sm.generate_run_org(pm.input_dir, pm.seq_structures)
     run_and_question(run_org, debugging)
-    run_and_question(run_org, debugging)
+    # run_and_question(run_org, debugging)
     core.quit()
 
 if __name__ == '__main__':

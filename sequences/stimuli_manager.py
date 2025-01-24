@@ -2,6 +2,7 @@ from typing import Dict, List, Tuple
 import random
 import os
 import glob
+from pathlib import Path
 from itertools import permutations, combinations
 from collections import Counter
 import sequences.params as pm
@@ -20,13 +21,13 @@ def w_and_set_seed(debugging:bool, out_dir:str)-> int:
 
 def w_seed(out_dir:str, seed:int)-> None:
     ''' Write the seed in a file'''
-    seed_fn = f"{out_dir}/seed.txt"
+    seed_fn = Path(f"{out_dir}/seed.txt")
     with open(seed_fn, "w") as f:
         f.write(str(seed))
 
 def r_and_set_seed(out_dir:str)-> None:
     ''' Read the seed from a file and set it'''
-    seed_fn = f"{out_dir}/seed.txt"
+    seed_fn = Path(f"{out_dir}/seed.txt")
     with open(seed_fn, "r") as f:
         seed = f.read()
     random.seed(int(seed))
