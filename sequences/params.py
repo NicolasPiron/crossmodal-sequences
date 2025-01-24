@@ -1,18 +1,19 @@
 from psychopy import prefs
+from pathlib import Path
 
 # paths
-input_dir = "data/input"
-output_dir = "data/output"
-bg_fn = f"{input_dir}/background/background2.jpg"
-stim_bg_fn = f"{input_dir}/background/stim_bg.png"
-sound0_fn = f'{input_dir}/sounds/reward.mp3'
-instr1_fn = f"{input_dir}/instructions/instructions_p1.txt"
-instr2_fn = f"{input_dir}/instructions/instructions_p2.txt"
-instr_q_fn = f"{input_dir}/instructions/instructions_q.txt"
-instr_bonus_fn = f"{input_dir}/instructions/instructions_bonus.txt"
-instr_stimpres_fn = f"{input_dir}/instructions/instr_stim_pres.txt"
-fix_img_fn = f"{input_dir}/fix/fix.png"
-q_reward_fn = [f'{input_dir}/sounds/reward{i}.mp3' for i in range(1, 4)]
+input_dir = Path("data/input")
+output_dir = Path("data/output")
+bg_fn = Path(f"{input_dir}/background/background2.jpg")
+stim_bg_fn = Path(f"{input_dir}/background/stim_bg.png")
+sound0_fn = Path(f'{input_dir}/sounds/reward.mp3')
+instr1_fn = Path(f"{input_dir}/instructions/instructions_p1.txt")
+instr2_fn = Path(f"{input_dir}/instructions/instructions_p2.txt")
+instr_q_fn = Path(f"{input_dir}/instructions/instructions_q.txt")
+instr_bonus_fn = Path(f"{input_dir}/instructions/instructions_bonus.txt")
+instr_stimpres_fn = Path(f"{input_dir}/instructions/instr_stim_pres.txt")
+fix_img_fn = Path(f"{input_dir}/fix/fix.png")
+q_reward_fn = [Path(f'{input_dir}/sounds/reward{i}.mp3') for i in range(1, 4)]
 
 # stim config
 t = 0.001 # speed of text presentation
