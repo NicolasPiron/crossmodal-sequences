@@ -165,9 +165,9 @@ def initialize_run(debugging):
         'run': '01',
     }
 
-    # dlg = DlgFromDict(exp_info, title='Enter participant info', sortKeys=False)
-    # fl.handle_user_cancel(dlg)
-    # fl.check_user_info(exp_info)
+    dlg = DlgFromDict(exp_info, title='Enter participant info', sortKeys=False)
+    fl.handle_user_cancel(dlg)
+    fl.check_user_info(exp_info)
 
     out_dir = f"data/output/sub-{exp_info['ID']}"
     logfn = f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}_cmseq-logs-{datetime.now().strftime('%Y%m%d-%H%M')}.log"
@@ -243,7 +243,7 @@ def present_instructions(tools):
         instr.draw()
         win.flip()
         fl.check_escape(tools)
-        #event.waitKeys(keyList=['space'])
+        event.waitKeys(keyList=['space'])
 
     if exp_info['run'] == '01': # only present the instructions at the first run
         fl.type_text(
@@ -253,7 +253,7 @@ def present_instructions(tools):
             background=background,
             t=pm.t
         )
-        #event.waitKeys(keyList=['space'])
+        event.waitKeys(keyList=['space'])
 
     instr1, instr2 = [
         open(fn, "r", encoding="utf-8").read()
@@ -514,7 +514,7 @@ def initialize_block(tools, tracker, run_org):
     background.draw()
     block_info.draw()
     win.flip()
-    #event.waitKeys(keyList=['space'])
+    event.waitKeys(keyList=['space'])
 
     # e.g. {'trial1': ['A', 'B', 'C', 'A', 'B', 'C'], 'trial2': ['C', 'A', 'B'...
     block_org = sm.distribute_sequences_trial(sequence_names=chosen_sequences, n_trials=pm.n_trials)
