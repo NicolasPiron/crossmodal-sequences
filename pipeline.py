@@ -33,7 +33,7 @@ def execute_run(run_org, debugging=False):
     exp_info = tools['exp_info']
     run_org = run_org[f'run{int(exp_info["run"])}']
     logger.info(f'=============== Start of run {exp_info["run"]} ===============')
-    logger.info(f'run org: {exp_info["run"]}')
+    logger.info(f'run org: {run_org}')
     present_instructions(tools) # Present instructions 
     # Generate the multimodal sequences of items
     try:
@@ -409,10 +409,10 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     t_act = pm.t_act
     t_fb = pm.t_fb
     if tools['debugging']:
-        t_viz_cue = 0.01
-        t_viz_target = 0.01
-        t_act = 0.01
-        t_fb = 0.01
+        t_viz_cue = pm.t_viz_cue
+        t_viz_target = pm.t_viz_target
+        t_act = pm.t_act
+        t_fb = pm.t_fb
 
     background.draw()
     cue_viz.draw()
