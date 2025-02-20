@@ -1,5 +1,6 @@
 import os
 import logging
+import glob
 from datetime import datetime
 from psychopy.gui import DlgFromDict
 from psychopy import visual, core, event, sound
@@ -11,29 +12,26 @@ import byte_triggers as bt
 from sequences.common import get_win_dict
 from bonus_question import ask_all_seq
 
-def execute_run(run_org, debugging=False):
-    ''' Function to execute a run of the experiment. Need to be called twice for the full experiment.
+def execute_run(debugging=False):
+    ''' Main function, it executes a run of the experiment. Need to be called twice for the full experiment.
 
     Parameters
     ----------
-    run_org : dict
-        Dictionary containing the organization of the sequences for each block. {run1: {block1: [sequence1, sequence2, ...]}}
     debugging : bool
         If True, the run will be executed in debugging mode, which means that the stimuli will be presented for a shorter duration.
 
     Returns
     -------
-    exp_info : dict
-        Dictionary containing the participant's ID and the run number.
-    win : psychopy.visual.Window
-        The window object used for the experiment. It is fed to the bonus question module. 
+    tools : dict
+        Dictionary containing the tools needed for the experiment (needed to transfer the window to the bonus questions).
     '''
     tools = initialize_run(debugging)
     logger = tools['logger']
     exp_info = tools['exp_info']
-    run_org = run_org[f'run{int(exp_info["run"])}']
+    two_run_org = sm.generate_run_org(pm.input_dir, pm.seq_structures)
+    run_org = two_run_org[f'run{int(exp_info["run"])}']
     logger.info(f'=============== Start of run {exp_info["run"]} ===============')
-    logger.info(f'run org: {exp_info["run"]}')
+    logger.info(f'run org: {run_org}')
     present_instructions(tools) # Present instructions 
     # Generate the multimodal sequences of items
     try:
@@ -79,6 +77,28 @@ def execute_run(run_org, debugging=False):
             tools["win"])
 
 def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, tracker, block_org):
+    ''' Executes a full block: sequence presentation and questioning. Returns the updated tracker.
+    
+    Parameters
+    ----------
+    tools : dict
+        Dictionary containing the tools needed for the experiment.
+    amodal_sequences : dict
+        Dictionary containing the multimodal sequences of items. {sequence_name: [item1, item2, ...]}
+    question_mod_org : dict
+        Dictionary containing the organization of the modalities for the questions. {block1: {trial1: [mod1, mod2, ...]}}
+    first_seq_mod_org : dict
+        Dictionary containing the organization of the modalities for the first sequence of each trial. {block1: [mod1, mod2, ...]}
+    tracker : dict
+        Dictionary containing the tracking variables for the experiment.
+    block_org : dict
+        Dictionary containing the organization of the sequences for each block. {trial1: [sequence1, sequence2, ...]}
+        
+    Returns
+    -------
+    tracker : dict
+        Dictionary containing the tracking variables for the experiment.
+    '''
 
     for j in range(pm.n_trials): # 3 trials for a block
         tracker['trial_id'] = j + 1
@@ -110,9 +130,28 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
     return tracker
 
 def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question_mod_org):
+    ''' Asks 3 questions and give feedbacks for a given trial. Returns the updated tracker.
+    
+    Parameters
+    ----------
+    tools : dict
+        Dictionary containing the tools needed for the experiment.
+    amodal_sequences : dict
+        Dictionary containing the multimodal sequences of items. {sequence_name: [item1, item2, ...]}
+    tracker : dict
+        Dictionary containing the tracking variables for the experiment.
+    trial_seq_org : list
+        List containing the sequences for the trial. e.g. ['A', 'B', 'C', 'A', 'B', 'C']
+    question_mod_org : dict
+        Dictionary containing the organization of the modalities for the questions. {block1: {trial1: [mod1, mod2, ...]}}
 
+    Returns
+    -------
+    tracker : dict
+        Dictionary containing the tracking variables for the experiment.
+    '''
+    
     tracker['points_attributed'] = 0 # reset points for each trial
-    #tracker['used_items'] = {} # reset used items for each trial
     question_modalities = question_mod_org[f'block{tracker["block_id"]}'][f'trial{tracker["trial_id"]}']
     t_prep = pm.t_prep
     t_iqi = pm.t_iqi
@@ -137,7 +176,7 @@ def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question
     tools['win'].flip()
     core.wait(t_prep)
 
-    for m, seq_name in enumerate(trial_seq_org[0:3]):
+    for m, seq_name in enumerate(trial_seq_org[0:3]): # 3 questions per trial because 3 sequences presented twice
         tracker['question_id'] = m + 1
         tracker = ask_trial_question(
             tools=tools, 
@@ -161,6 +200,9 @@ def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question
     return tracker
 
 def initialize_run(debugging):
+    ''' Initializes a run. Creates the output dir, set or get the seed to control randomization and 
+    returns a dictionary containing the tools needed for the experiment (window, pport etc).'''
+
     exp_info = {
         'ID': '00',
         'run': '01',
@@ -174,13 +216,16 @@ def initialize_run(debugging):
     logfn = f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}_cmseq-logs-{datetime.now().strftime('%Y%m%d-%H%M')}.log"
     os.makedirs(out_dir, exist_ok=True)
 
-    # if len(os.listdir(out_dir)) > 0: # check if the output directory is empty to avoid overwriting data
-    #     if not debugging:
-    #         print(f"--- Output directory {out_dir} is not empty, exiting... ---")
-    #         quit()
-    #     else:
-    #         if exp_info['run'] == '01':
-    #             os.system(f"rm -r {out_dir}/*") # remove all files in the output directory
+    if len(os.listdir(out_dir)) > 5: # check if the output directory is not filled with old files
+        if not debugging:
+            print(f"--- Output directory {out_dir} is not empty, exiting... ---")
+            quit()
+        else:
+            files = glob.glob(f"{out_dir}/*")
+            if f'{out_dir}/seed.txt' in files:
+                files.remove(f'{out_dir}/seed.txt') # keep the seed file
+            for f in files:
+                os.remove(f)
 
     bt.add_file_handler(
         logfn,
@@ -198,7 +243,7 @@ def initialize_run(debugging):
     else:
         pport = bt.ParallelPortTrigger(pm.pport, delay=10)
 
-    if exp_info['run'] == '01': # if the experiment crashes, the sequences will be the same
+    if exp_info['run'] == '01': # if the experiment crashes, the sequences and run org will be the same
         seed = sm.w_and_set_seed(debugging, out_dir)
     else:
         seed = sm.r_and_set_seed(out_dir)
@@ -234,7 +279,8 @@ def initialize_run(debugging):
     return tools
 
 def present_instructions(tools):
-    ''' Function to present the instructions to the participant. '''
+    '''Presents the instructions to the participant.'''
+
     exp_info = tools['exp_info']
     win = tools['win']
     background = tools['background']
@@ -313,6 +359,27 @@ def setup_sequence_distribution(tools):
     return amodal_sequences, question_mod_org, first_seq_mod_org
 
 def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, seq_name):
+    ''' Ask a question for a given sequence. Shows the two items and the slots for the response. 
+    Put some info about the response in the tracker's 'data' slot to get a formated csv at the end for faster analysis.
+    
+    Parameters
+    ----------
+    tools : dict
+        Dictionary containing the tools needed for the experiment.
+    tracker : dict
+        Dictionary containing the tracking variables for the experiment.
+    amodal_sequences : dict
+        Dictionary containing the multimodal sequences of items. {sequence_name: [item1, item2, ...]}
+    question_modalities : dict
+        Dictionary containing the organization of the modalities for the questions. {block1: {trial1: [mod1, mod2, ...]}}
+    seq_name : str
+        The name of the sequence to be used for the question.
+        
+    Returns
+    -------
+    tracker : dict
+        Dictionary containing the tracking variables for the experiment.
+    '''
 
     win = tools['win']
     aspect_ratio = tools['aspect_ratio']
@@ -408,11 +475,11 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     t_viz_target = pm.t_viz_target
     t_act = pm.t_act
     t_fb = pm.t_fb
-    if tools['debugging']:
-        t_viz_cue = 0.01
-        t_viz_target = 0.01
-        t_act = 0.01
-        t_fb = 0.01
+    # if tools['debugging']:
+    #     t_viz_cue = 0.01
+    #     t_viz_target = 0.01
+    #     t_act = 0.01
+    #     t_fb = 0.01
 
     background.draw()
     cue_viz.draw()
@@ -481,6 +548,26 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     return tracker
 
 def initialize_trial_sequences(tools, tracker, first_seq_mod_org, block_org):
+    ''' Get the sequences and modalities for a given trial. Returns the ordered sequences and modalities (lists).
+    
+    Parameters
+    ----------
+    tools : dict
+        Dictionary containing the tools needed for the experiment.
+    tracker : dict
+        Dictionary containing the tracking variables for the experiment.
+    first_seq_mod_org : dict
+        Dictionary containing the organization of the modalities for the first sequence of each trial. {block1: [mod1, mod2, ...]}
+    block_org : dict
+        Dictionary containing the organization of the sequences for the block with format: {trial1: ['A', 'B', 'C', 'A', 'B', 'C'], 'trial2': ['C', 'A', 'B'...}
+
+    Returns
+    -------
+    trial_seq_org : list
+        List containing the sequences for the trial. e.g. ['A', 'B', 'C', 'A', 'B', 'C']
+    trial_mod_org : list
+        List containing the modalities for the trial. e.g. ['img', 'txt', 'img', 'txt', 'img', 'txt']
+    '''
 
     trial_seq_org = block_org[f'trial{tracker["trial_id"]}'] # e.g. ['A', 'B', 'C', 'A', 'B', 'C']
     first_seq_mod = first_seq_mod_org[f'block{tracker["block_id"]}'][tracker["trial_id"]-1]
@@ -495,6 +582,17 @@ def initialize_trial_sequences(tools, tracker, first_seq_mod_org, block_org):
     return trial_seq_org,trial_mod_org
 
 def initialize_block(tools, tracker, run_org):
+    ''' Initialize a block. Returns the a dict with the organization of the sequences for the block with format:
+    {'trial1': ['A', 'B', 'C', 'A', 'B', 'C'], 'trial2': ['C', 'A', 'B'...}
+    
+    Parameters
+    ----------
+    tools : dict
+        Dictionary containing the tools needed for the experiment.
+    tracker : dict
+        Dictionary containing the tracking variables for the experiment.
+    run_org : dict
+        Dictionary containing the organization of the sequences for each block. {block1:[sequence1, sequence2, ...]}'''
 
     logger = tools['logger']
     win = tools['win']
@@ -523,6 +621,7 @@ def initialize_block(tools, tracker, run_org):
     return block_org
 
 def provide_trial_feedback(tools, tracker):
+    ''' Provide feedback at the end of a trial. Returns nothing. '''
 
     t_post_q = pm.t_post_q
     if tools['debugging']:
@@ -536,8 +635,8 @@ def provide_trial_feedback(tools, tracker):
         block_info = f"Fin du bloc {tracker['block_id']}. Le bloc suivant va commencer."
     else:
         block_info = "L'essai suivant va commencer."
-    txt =  f"{trial_feedback} \n{block_info}"
 
+    txt =  f"{trial_feedback} \n{block_info}"
     text_stim = visual.TextStim(
         tools['win'], 
         text=txt, 
@@ -551,8 +650,10 @@ def provide_trial_feedback(tools, tracker):
     text_stim.draw()
     tools['win'].flip()
     core.wait(t_post_q)
+    return None
 
 def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
+    ''' Present the 6 sequences of a trial before the questions. Returns nothing. '''
     logger = tools['logger']
     for k, modality in enumerate(trial_mod_org): # loop over the 6 sequences (e.g. A, B, C * the two modalities (img, txt))
         sequence_name = trial_seq_org[k]
@@ -564,13 +665,16 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
         present_stimuli(tools, sequence, stims, modality)
 
 def present_stimuli(tools, sequence, stims, modality):
+    ''' Present the 6 stimuli of a sequence. Returns nothing. '''
     debugging = tools['debugging']
-    for l, stim in enumerate(stims):  # noqa: E741
+    for i, stim in enumerate(stims):
         if debugging:
             continue
-        present_stimulus(tools, sequence, l, stim, modality)
+        present_stimulus(tools, sequence, i, stim, modality)
+    return None
 
-def present_stimulus(tools, sequence, l, stim, modality): # noqa: E741
+def present_stimulus(tools, sequence, i, stim, modality):
+    ''' Present a single stimulus. Returns nothing. '''
     
     debugging = tools['debugging']
     pport = tools['pport']
@@ -596,8 +700,8 @@ def present_stimulus(tools, sequence, l, stim, modality): # noqa: E741
     background.draw()
     stim_image.draw()
     # log info there to be closer to the actual presentation
-    logger.info(f'stimulus number: {l+1}')
-    logger.info(f'stimulus name: {str(sequence[l])}')
+    logger.info(f'stimulus number: {i+1}')
+    logger.info(f'stimulus name: {str(sequence[i])}')
     logger.info(f'stimulus category: {stim_cat}')
     logger.info(f'stimulus path: {stim}')
 
@@ -617,6 +721,7 @@ def present_stimulus(tools, sequence, l, stim, modality): # noqa: E741
     fix_cross.draw()
     win.flip()
     core.wait(t_isi)
+    return None
 
 #########################
 # highest level functions
@@ -626,25 +731,19 @@ def clear_stuff(win):
     core.wait(0.5)
     event.clearEvents()
 
-def run_and_question(run_org, debugging=False):
-    tools = execute_run(run_org=run_org, debugging=debugging)
-    clear_stuff(tools['win'])
-    ask_all_seq(subject_id=tools['exp_info']['ID'], 
-                run_id=tools['exp_info']['run'], 
-                win_dict=tools,
-                set_seed=False)
-
-def test_pipeline(debugging=True):
-    run_org = sm.generate_run_org(pm.input_dir, pm.seq_structures)
-    tools = execute_run(run_org, debugging)
-    tools['win'].close()
-
 def pipeline(debugging=False):
-    run_org = sm.generate_run_org(pm.input_dir, pm.seq_structures)
-    run_and_question(run_org, debugging)
-    # run_and_question(run_org, debugging)
+    tools = execute_run(debugging=debugging)
+    clear_stuff(tools['win'])
+    ask_all_seq(
+        subject_id=tools['exp_info']['ID'], 
+        run_id=tools['exp_info']['run'], 
+        win_dict=tools,
+    )
     core.quit()
 
+def test_pipeline(debugging=True):
+    tools = execute_run(debugging)
+    tools['win'].close()
+
 if __name__ == '__main__':
-    
     pipeline(debugging=True)
