@@ -1,0 +1,5 @@
+You will have to learn the order of items in 6 different sequences.
+Each sequence will be presented multiple times, sometimes with images, sometimes with words.
+Each sequence consists of 6 items, each belonging to a different category.
+
+For example, there can only be one color per sequence.

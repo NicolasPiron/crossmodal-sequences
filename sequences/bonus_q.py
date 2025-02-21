@@ -4,9 +4,9 @@ import random
 from psychopy import visual, core, event
 from sequences import stimuli_manager as sm
 
-def check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path):
+def check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path, txt):
     if occ_count == 5:
-        resp = confirm_slot_filling(start_item_img, images, win, background)
+        resp = confirm_slot_filling(start_item_img, images, win, background, txt)
         if resp[0] == "space":
             running = save_slot_data(start_item_img, slots, out_path)
         elif resp[0] == "escape":
@@ -16,10 +16,10 @@ def check_slot_filling(start_item_img, images, slots, occ_count, win, background
         running = True
     return running
 
-def confirm_slot_filling(start_item_img, images, win, background):
+def confirm_slot_filling(start_item_img, images, win, background, txt):
     validate = visual.TextStim(
         win,
-        text="Toutes les cases ont été remplies! Appuyer sur ESPACE pour valider, ou sur ESC pour recommencer.",
+        text=txt,
         pos=(0, 0),
         color="black",
     )

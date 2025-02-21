@@ -8,6 +8,7 @@ import pandas as pd
 from sequences import stimuli_manager as sm
 from sequences import flow as fl
 from sequences import params as pm
+from sequences import instr as it
 import byte_triggers as bt
 from sequences.common import get_win_dict
 from bonus_question import ask_all_seq
@@ -25,21 +26,21 @@ def execute_run(debugging=False):
     tools : dict
         Dictionary containing the tools needed for the experiment (needed to transfer the window to the bonus questions).
     '''
-    tools = initialize_run(debugging)
+    tools = initialize_run(debugging) # seed is set here. Tools contains a lot of useful stuff
     logger = tools['logger']
     exp_info = tools['exp_info']
-    two_run_org = sm.generate_run_org(pm.input_dir, pm.seq_structures)
-    run_org = two_run_org[f'run{int(exp_info["run"])}']
-    logger.info(f'=============== Start of run {exp_info["run"]} ===============')
-    logger.info(f'run org: {run_org}')
-    present_instructions(tools) # Present instructions 
-    # Generate the multimodal sequences of items
+    # Generate the multimodal sequences of items and the organization of the modality for presenation and questions
     try:
         amodal_sequences, question_mod_org, first_seq_mod_org = setup_sequence_distribution(tools)
     except Exception as exc:
         fl.log_exceptions(f"An error occurred during sequence generation: {exc}", logger, tools['win'])
-
-    tracker = {
+    two_run_org = sm.generate_run_org(amodal_sequences) # get the global oorganization of sequences for the two runs
+    run_org = two_run_org[f'run{int(exp_info["run"])}'] # get the organization of sequences for the current run
+    logger.info(f'=============== Start of run {exp_info["run"]} ===============')
+    logger.info(f'run org: {run_org}')
+    present_instructions(tools) # Present instructions 
+    # define the tracker to keep track of where we are in the experiment
+    tracker = { 
         'data': [], 
         'block_id': 0, 
         'trial_id': 0, 
@@ -48,6 +49,7 @@ def execute_run(debugging=False):
         'used_items': {}
     }
 
+    # iterate over the blocks - the actual experiment
     try:
 
         for i in range(pm.n_blocks): # 4 blocks in a run
@@ -159,9 +161,7 @@ def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question
         t_prep = 0.01
         t_iqi = 0.01
     
-    with open(pm.instr_q_fn, "r", encoding="utf-8") as file:
-        text = file.read()
-
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_q_fn')
     instructions = visual.TextStim(
         win=tools['win'],
         text=text,
@@ -206,6 +206,7 @@ def initialize_run(debugging):
     exp_info = {
         'ID': '00',
         'run': '01',
+        'lang': 'fr'
     }
 
     dlg = DlgFromDict(exp_info, title='Enter participant info', sortKeys=False)
@@ -222,10 +223,11 @@ def initialize_run(debugging):
             quit()
         else:
             files = glob.glob(f"{out_dir}/*")
-            if f'{out_dir}/seed.txt' in files:
-                files.remove(f'{out_dir}/seed.txt') # keep the seed file
-            for f in files:
-                os.remove(f)
+            if exp_info['run'] == '01':
+                if f'{out_dir}/seed.txt' in files:
+                    files.remove(f'{out_dir}/seed.txt') # keep the seed file
+                for f in files:
+                    os.remove(f)
 
     bt.add_file_handler(
         logfn,
@@ -246,13 +248,14 @@ def initialize_run(debugging):
     if exp_info['run'] == '01': # if the experiment crashes, the sequences and run org will be the same
         seed = sm.w_and_set_seed(debugging, out_dir)
     else:
-        seed = sm.r_and_set_seed(out_dir)
+        seed = sm.r_and_set_seed(out_dir) # PROBLEM HERE? the seed is set but randomization is fucked
 
     logger = logging.getLogger()
     logger.info('Experiment started.')
     logger.info(f'Seed: {seed}')
     logger.info(f'Participant ID: {exp_info["ID"]}')
     logger.info(f'Run number: {exp_info["run"]}')
+    logger.info(f'Language: {exp_info["lang"]}')
 
     reward_max = sound.Sound(pm.sound0_fn)
     q_reward_sounds = [sound.Sound(fn) for fn in pm.q_reward_fn]
@@ -292,23 +295,22 @@ def present_instructions(tools):
         fl.check_escape(tools)
         event.waitKeys(keyList=['space'])
 
+    if exp_info['lang'] == 'fr':
+        txt = "Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer."
+    else:
+        txt = "We are going to present the instructions.\nPress the SPACE key to continue."
     if exp_info['run'] == '01': # only present the instructions at the first run
         fl.type_text(
-            "Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer.",
-            win,
+            text=txt,
+            win=win,
             height=pm.text_height,
             background=background,
             t=pm.t
         )
         event.waitKeys(keyList=['space'])
 
-    instr1, instr2 = [
-        open(fn, "r", encoding="utf-8").read()
-        for fn in [
-            pm.instr1_fn, 
-            pm.instr2_fn
-            ]
-    ]
+    instr1 = it.get_txt(exp_info['lang'], 'instr1_fn')
+    instr2 = it.get_txt(exp_info['lang'], 'instr2_fn')
 
     instr_objects = [visual.TextStim(
         win,
@@ -345,9 +347,9 @@ def setup_sequence_distribution(tools):
     first_seq_mod_org : dict
         Dictionary containing the organization of the modalities for the first sequence of each trial. {block1: [mod1, mod2, ...]}
     '''
-    sm.check_nstims(pm.categories, pm.input_dir)
-    sm.check_img_txt(pm.input_dir)
-    amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures)
+    sm.check_nstims(pm.categories, pm.input_dir, tools['exp_info']['lang'])
+    sm.check_img_txt(pm.input_dir, tools['exp_info']['lang'])
+    amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang=tools['exp_info']['lang'])
     # define modality of questions in each trial
     question_mod_org = sm.distribute_mod_quest(n_blocks=pm.n_blocks, n_trials=pm.n_trials)
     first_seq_mod_org = sm.distribute_mod_seq(n_block=pm.n_blocks)
@@ -400,7 +402,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     first_for_question = sequence[idx1] # first item to be presented for the question (e.g. 'cow')
     second_for_question = sequence[idx2]
-
+ 
     if seq_name in tracker['used_items']: # store idx of items used for this sequence
         tracker['used_items'][seq_name].extend([idx2])
     else:
@@ -408,7 +410,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     # randomly select in which modality the question will be asked
     modality = question_modalities[tracker['question_id'] - 1] # q_id - 1 = for m in questions
-    stims = sm.get_stims(pm.input_dir, sequence, modality)
+    stims = sm.get_stims(pm.input_dir, sequence, modality, lang=exp_info['lang'])
     cat1 = sm.get_cat_from_stim(stims[idx1])
     cat2 = sm.get_cat_from_stim(stims[idx2])
     triggers = [pm.triggers[cat1][modality]['quest'],
@@ -475,11 +477,11 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     t_viz_target = pm.t_viz_target
     t_act = pm.t_act
     t_fb = pm.t_fb
-    # if tools['debugging']:
-    #     t_viz_cue = 0.01
-    #     t_viz_target = 0.01
-    #     t_act = 0.01
-    #     t_fb = 0.01
+    if tools['debugging']:
+        t_viz_cue = 0.01
+        t_viz_target = 0.01
+        t_act = 0.01
+        t_fb = 0.01
 
     background.draw()
     cue_viz.draw()
@@ -504,7 +506,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     )
 
     distance = sm.get_response_distance(resp_idx, idx2, rt)
-    feedback_txt, font_color, correct, n_points = sm.get_feedback_args(distance)
+    feedback_txt, font_color, correct, n_points = sm.get_feedback_args(distance, lang=exp_info['lang'])
     tracker['points_attributed'] += n_points
 
     fl.check_escape(tools)
@@ -601,8 +603,12 @@ def initialize_block(tools, tracker, run_org):
     logger.info(f'block: {tracker["block_id"]}')
     logger.info(f'sequences: {chosen_sequences}')
 
+    if tools['exp_info']['lang'] == 'fr':
+        txt = f"Bloc {tracker['block_id']} \nAppuyez sur la touche ESPACE pour commencer!"
+    else:
+        txt = f"Block {tracker['block_id']} \nPress the SPACE key to start!"
     block_info = visual.TextStim(win=win,
-        text=f'Bloc {tracker["block_id"]} \nAppuyez sur la touche ESPACE pour commencer!',
+        text=txt,
         pos=(0, 0),
         font="Arial",
         color='black', 
@@ -629,12 +635,23 @@ def provide_trial_feedback(tools, tracker):
 
     if tracker['points_attributed'] > 6:
         tools['reward_max'].play() 
-    trial_feedback = sm.get_trial_feedback(n_points=tracker['points_attributed'], max_points=pm.max_points)
+    trial_feedback = sm.get_trial_feedback(
+        n_points=tracker['points_attributed'], 
+        max_points=pm.max_points, 
+        lang=tools['exp_info']['lang']
+    )
 
     if tracker['trial_id'] == 3:
-        block_info = f"Fin du bloc {tracker['block_id']}. Le bloc suivant va commencer."
+        if tools['exp_info']['lang'] == 'fr':
+            block_info = f"Fin du bloc {tracker['block_id']}. Le bloc suivant va commencer."
+        else:
+            block_info = f"End of block {tracker['block_id']}. The next block will start."
     else:
-        block_info = "L'essai suivant va commencer."
+        if tools['exp_info']['lang'] == 'fr':
+            block_info = "L'essai suivant va commencer."
+        else:
+            block_info = "The next trial will start."
+       
 
     txt =  f"{trial_feedback} \n{block_info}"
     text_stim = visual.TextStim(
@@ -658,7 +675,7 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
     for k, modality in enumerate(trial_mod_org): # loop over the 6 sequences (e.g. A, B, C * the two modalities (img, txt))
         sequence_name = trial_seq_org[k]
         sequence = amodal_sequences[sequence_name]
-        stims = sm.get_stims(pm.input_dir, sequence, modality)
+        stims = sm.get_stims(pm.input_dir, sequence, modality, lang=tools['exp_info']['lang'])
         logger.info(f'sequence number: {k+1}')
         logger.info(f'sequence name: {sequence_name}')
         logger.info(f'sequence modality: {modality}')
@@ -737,6 +754,7 @@ def pipeline(debugging=False):
     ask_all_seq(
         subject_id=tools['exp_info']['ID'], 
         run_id=tools['exp_info']['run'], 
+        lang=tools['exp_info']['lang'],
         win_dict=tools,
     )
     core.quit()

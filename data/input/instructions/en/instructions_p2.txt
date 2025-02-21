@@ -1,0 +1,5 @@
+After seeing a series of sequences, you will have to answer questions.
+Each question occurs in three steps:
+- The first presented item serves to identify the sequence.
+- The second item is the target; you must remember its position.
+- Once both items have been presented, you must place the second item in the correct position. You have 2 seconds to do so.

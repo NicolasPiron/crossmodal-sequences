@@ -7,14 +7,19 @@ output_dir = Path("data/output")
 bg_fn = Path(f"{input_dir}/background/background2.jpg")
 stim_bg_fn = Path(f"{input_dir}/background/stim_bg.png")
 sound0_fn = Path(f'{input_dir}/sounds/reward.mp3')
-instr1_fn = Path(f"{input_dir}/instructions/instructions_p1.txt")
-instr2_fn = Path(f"{input_dir}/instructions/instructions_p2.txt")
-instr_q_fn = Path(f"{input_dir}/instructions/instructions_q.txt")
-instr_bonus_fn = Path(f"{input_dir}/instructions/instructions_bonus.txt")
-instr_stimpres_fn = Path(f"{input_dir}/instructions/instr_stim_pres.txt")
 fix_img_fn = Path(f"{input_dir}/fix/fix.png")
 q_reward_fn = [Path(f'{input_dir}/sounds/reward{i}.mp3') for i in range(1, 4)]
-
+instr_fnames = {
+    'instr1_fn': 'instructions_p1.txt',
+    'instr2_fn' : 'instructions_p2.txt',
+    'instr_q_fn' : 'instructions_q.txt',
+    'instr_bonus_fn' : 'instructions_bonus.txt',
+    'instr_bonus2_fn' : 'instructions_bonus2.txt',
+    'instr_bonus3_fn' : 'instructions_bonus3.txt',
+    'instr_stimpres_fn' : 'instr_stim_pres.txt',
+    'instr_stimpres2_fn' : 'instr_stim_pres2.txt',
+    'instr_stimpres3_fn' : 'instr_stim_pres3.txt',
+}
 # stim config
 t = 0.001 # speed of text presentation
 screen = 0 
