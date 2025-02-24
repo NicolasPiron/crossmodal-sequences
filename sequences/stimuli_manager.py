@@ -4,7 +4,7 @@ import os
 import glob
 from pathlib import Path
 from itertools import permutations, combinations
-from collections import Counter
+from collections import Counter, defaultdict
 import sequences.params as pm
 
 # tools to generate and pseudo-randomize sequences of stimuli
@@ -25,12 +25,13 @@ def w_seed(out_dir:str, seed:int)-> None:
     with open(seed_fn, "w") as f:
         f.write(str(seed))
 
-def r_and_set_seed(out_dir:str)-> None:
+def r_and_set_seed(out_dir:str)-> int:
     ''' Read the seed from a file and set it'''
     seed_fn = Path(f"{out_dir}/seed.txt")
     with open(seed_fn, "r") as f:
         seed = f.read()
     random.seed(int(seed))
+    print(f"Seed set to {seed}")
     return int(seed)
 
 def jitter_isi(value:float=0.2)-> float:
@@ -53,15 +54,15 @@ def draw_two(ignore_idx: list=None):
             idx2 = random.sample(range(1, 6), 1)
     return (0, idx2[0])
 
-def get_stims(input_dir, sequence, modality):
+def get_stims(input_dir:str, sequence:List[str], modality:str, lang:str)-> List[str]:
     '''Return the paths to the stimuli in the sequence'''
     stim_paths = []
     for item in sequence:
-        stim = glob.glob(os.path.join(input_dir, 'stims', '*', f'{item}_{modality}.png'))[0]
+        stim = glob.glob(os.path.join(input_dir, 'stims', lang, '*', f'{item}_{modality}.png'))[0]
         stim_paths.append(stim)
     return stim_paths
 
-def count_dupes(arr):
+def count_dupes(arr:List)-> int:
     '''Count the number of duplicates in a list'''
     seen = set()
     duplicate_counter = 0
@@ -72,14 +73,14 @@ def count_dupes(arr):
             seen.add(item)
     return duplicate_counter
 
-def sample_n_throw(arr, n=3):
+def sample_n_throw(arr:List, n:int=3) -> Tuple[List, List]:
     '''Sample n items from a list and remove them'''
     sample = random.sample(set(arr), n)
     for s in sample:
         arr.remove(s)
     return sample, arr
 
-def sample_until_no_dupes(arr, n=3):
+def sample_until_no_dupes(arr:List, n:int=3) -> Tuple[List, List]:
     '''Sample n items from a list and remove them'''
     temp = arr.copy()
     sample, new_temp = sample_n_throw(temp, n)
@@ -92,9 +93,22 @@ def sample_until_no_dupes(arr, n=3):
                 duplicate = False
     return sample, new_temp
 
-def distribute_sequences_block(sequences: dict, n_blocks: int) -> dict:
+def distribute_sequences_run(seq_names: list, n_runs: int) -> Dict[str, List[str]]:
+    ''' Distribute the sequences in the runs with no repetitions inside each run.
+    Returns a dict that looks like that : {'run1': ['I', 'A', 'F', 'E', 'G', 'J'], 'run2': ['L', 'C', 'H', 'B', 'D', 'K']}
+    '''
+    random.shuffle(seq_names)
+    result = defaultdict(list)
+    for i, seq in enumerate(seq_names): # go name by name to fill the runs
+        run_key = f"run{i % n_runs + 1}"  # this cycles through the runs
+        result[run_key].append(seq)
+    return dict(result)
+
+def distribute_sequences_block(seq_names: list, n_blocks: int) -> Dict[str, List[str]]:
     ''' Distribute the sequences in the blocks with no repetitions inside each block.
-    It also controls that the 6 sequences are all presented in the first two blocks'''
+    It also controls that the 6 sequences are all presented in the first two blocks.
+    Returns dict that looks like this: {'block1': ['L', 'E', 'G'], 'block2':[...], ...}
+    '''
 
     def check_2_blocks(blocks: dict) -> bool:
         '''Check if the first two blocks contain all the sequences'''
@@ -102,11 +116,10 @@ def distribute_sequences_block(sequences: dict, n_blocks: int) -> dict:
         block2 = blocks['block2']
         return True if count_dupes(block1+block2) == 0 else False
 
-    all_unique_seq = list(sequences.keys())
     are_all_seq_presented = False
 
     while not are_all_seq_presented:
-        all_seq_left = all_unique_seq*2
+        all_seq_left = seq_names*2
         blocks = {f"block{i+1}": [] for i in range(n_blocks)}
         for b in range(n_blocks):
             if b==2:
@@ -118,9 +131,17 @@ def distribute_sequences_block(sequences: dict, n_blocks: int) -> dict:
 
     return blocks
 
-def generate_run_org(input_dir, seq_structures) -> dict:
+def generate_run_org(sequences:Dict[str, List]) -> Dict[str, Dict[str, List[str]]]:
     ''' Generate the organization of sequences in the runs. The function returns a dict with the blocks of each run.
-    It controls that the sequences are well distributed between the two runs, with minimal overlap'''
+    It controls that the sequences are well distributed between the two runs.
+    If the experiment crashes, the splits will stay the same, but the blocks org will change. This is due to the
+    non replicable randomization in distribute_sequences_block(). At least if a seed is set, the two runs will be made
+    of different sequences.
+
+    sequences = {'A': ['item1', 'item2', ...], 'B': [...], ...}
+    
+    Returns dict that looks like this: {'run1': {'block1': ['L', 'E', 'G'], 'block2':[...], ...}, 'run2': {...}}
+    '''
 
     def get_pairs(string:str) -> List[str]:
         '''Get the pairs of sequences in each block'''
@@ -132,19 +153,10 @@ def generate_run_org(input_dir, seq_structures) -> dict:
         counts = Counter(normalized_items)
         repeated_items = [item for item, count in counts.items() if count > 1]
         return repeated_items
-    
-    def get_unrepeated_seq(pairs:list, repeated_pairs) -> List[str]:
-        ''' Return sequences that are not in repeated pairs'''
-        pair_as_str = "".join(pairs)
-        rep_pairs_as_str = "".join(repeated_pairs)
-        unrepeated_seq = []
-        for pair in pair_as_str:
-            if (pair not in rep_pairs_as_str) and (pair not in unrepeated_seq):
-                unrepeated_seq.append(pair)
-        return unrepeated_seq
 
-    def gen_one_run(sequences: dict) -> Tuple[dict, List[str]]:
-        '''Generate one run with only 2 repeated pairs. Return the blocks, repeated pairs and unrepeated sequences'''
+    def gen_one_run(sequences: List) ->  Dict[str, List[str]]:
+        '''Generate one run with only 2 repeated pairs. Return the blocks, repeated pairs and unrepeated sequences.
+        Returned dict looks like this {'block1': ['L', 'E', 'G'], 'block2':[...], ...}'''
         two_rep_pairs = False
         while not two_rep_pairs: # Keep generating blocks until we get the best case scenario
             blocks = distribute_sequences_block(sequences, 4)
@@ -152,41 +164,32 @@ def generate_run_org(input_dir, seq_structures) -> dict:
             for block in blocks.values():
                 pairs+=get_pairs(block)
             rep_pairs = get_repeated_pairs(pairs)
-            unrep_seq = get_unrepeated_seq(pairs, rep_pairs)
             if len(rep_pairs)==2: # 2 repeated pairs (the best case scenario)
                 two_rep_pairs = True
-        return blocks, rep_pairs, unrep_seq
+        return blocks
     
-    sequences = generate_sequences(input_dir, seq_structures)
-    # Generate two runs with unique repeated pairs between them (e.g. run1 AB, CF and run2 ED, FA)
-    running = True
-    while running:
-        blocks1, rep_pairs1, unrep_seq1 = gen_one_run(sequences)
-        blocks2, rep_pairs2, unrep_seq2 = gen_one_run(sequences)
-        # condition 1 : the standalone sequences are different in the two runs
-        four_standalone_seq = True if len(set(unrep_seq1+unrep_seq2))==4 else False
-        # condition 2 : the repeated pairs are unique between the two runs
-        counter = 0
-        for pair in rep_pairs1:
-            if pair not in rep_pairs2:
-                counter+=1
-        unique_repetitions = True if counter==2 else False
-        if unique_repetitions and four_standalone_seq:
-            running = False
-
-    run_org = {'run1': blocks1, 'run2': blocks2}
+    seq_names = list(sequences.keys())
+    seq_separated = distribute_sequences_run(seq_names, 2)
+    run_org = {
+        'run1': gen_one_run(seq_separated['run1']),
+        'run2': gen_one_run(seq_separated['run2'])
+    }
     return run_org
 
-def distribute_sequences_trial(sequence_names: List[str], n_trials: int) -> dict:
-    ''' Distribute the sequences in the trials with no repetitions of the positions of elements'''
+def distribute_sequences_trial(sequence_names: List[str], n_trials: int) -> Dict[str, List[str]]:
+    ''' Distribute the sequences in the trials with no repetitions of the positions of elements
+    Returns a dict that looks like this: {'trial1': ['A', 'B', 'C', 'A', 'B', 'C'], 'trial2': [...], ...}
+    '''
     orders = generate_orders_trial(sequence_names, n_trials)
     trials = {f"trial{i+1}": None for i in range(n_trials)}
     for i, _ in enumerate(trials):
         trials[f"trial{i+1}"] =orders[i]*2
     return trials
 
-def distribute_mod_seq(n_block)-> Dict[str, List[str]]:
-    ''' Distribute the modality of the first sequence of each trial between the blocks'''
+def distribute_mod_seq(n_block:int)-> Dict[str, List[str]]:
+    ''' Distribute the modality of the first sequence of each trial between the blocks
+    Returns a dict that looks like this: {'block1': ['img', 'txt', 'img'], 'block2': [...], ...}
+    '''
     
     block_layouts = [(2, 1)] * 2 + [(1, 2)] * 2
     random.shuffle(block_layouts) # shuffle block layouts once
@@ -197,9 +200,10 @@ def distribute_mod_seq(n_block)-> Dict[str, List[str]]:
         block_org[f'block{i + 1}'] = org
     return block_org
 
-def distribute_mod_quest(n_blocks: int, n_trials: int) -> Dict[str, Dict[str, Dict[str, int]]]:
-    '''Fills a dictionary with the layout of trials question's modality.'''
-    
+def distribute_mod_quest(n_blocks: int, n_trials: int) -> Dict[str, Dict[str, List[str]]]:
+    ''' Fills a dictionary with the layout of trials question's modality.
+    Returned dict looks like this: {'block1': {'trial1': ['img', 'txt', 'txt'], 'trial2': ['img',...], ...}, 'block2': {...}, ...}
+    '''
     block_layouts = [(5, 4)] * 2 + [(4, 5)] * 2
     trial_layouts = {'more_img': [(2, 1)] * 2 + [(1, 2)],
                      'more_txt': [(2, 1)] + [(1, 2)] * 2}
@@ -222,9 +226,10 @@ def distribute_mod_quest(n_blocks: int, n_trials: int) -> Dict[str, Dict[str, Di
 
     return block_org
 
-def generate_orders_trial(sequence_names: list, n_trials: int) -> list:
-    ''' Return 3 sequences with unique positions of the elements'''
-
+def generate_orders_trial(sequence_names: list, n_trials: int) -> List[Tuple[str]]:
+    ''' Return 3 orders of sequence names: The position of each unique elements is unique.
+    Returns this kind of list [('A', 'B', 'C'), ('B', 'C', 'A'), ('C', 'A', 'B')]
+    '''
     orders = list(permutations(sequence_names, n_trials))
     pos_tracker = {key:0 for key in range(len(sequence_names))}
     unique_pos_seq = list()
@@ -242,15 +247,15 @@ def generate_orders_trial(sequence_names: list, n_trials: int) -> list:
 
     return unique_pos_seq
 
-def generate_sequences(input_dir, seq_structures):
+def generate_sequences(input_dir:str, seq_structures:Dict, lang:str)-> Dict[str, List[str]]:
     ''' Generate 6 unique amodal sequences. They are based on the fixed strucutres in seq_structures.
-    The sequences are returned in a dict {name:order, ...}
+    The sequences are returned in a dict {'A':[item1, 'item2', ...], ...}
     '''
-    all_cat = sorted(os.listdir(os.path.join(input_dir, 'stims')))
+    all_cat = sorted(os.listdir(os.path.join(input_dir, 'stims', lang)))
     all_cat = [cat for cat in all_cat if not cat.startswith('.')] # remove .DS_store
     all_stims = {}
     for cat in all_cat:
-        cat_stims = glob.glob(os.path.join(input_dir, 'stims', cat, '*img.png'))
+        cat_stims = glob.glob(os.path.join(input_dir, 'stims', lang, cat, '*img.png'))
         cat_stims = [os.path.basename(stim).split('_')[0] for stim in cat_stims]
         random.shuffle(cat_stims)
         all_stims[cat] = cat_stims
@@ -273,20 +278,20 @@ def generate_modalities(start_with_img=True):
     else:
         return ['txt', 'img']*3
 
-def check_nstims(categories, input_dir):
+def check_nstims(categories, input_dir, lang):
     'Check if there is the same number of stim per class, raise error if not'
     counter = 0
     for i, cat in enumerate(categories.keys()):
-        nstim = len(glob.glob(f"{input_dir}/stims/{cat}/*.png"))
+        nstim = len(glob.glob(f"{input_dir}/stims/{lang}/{cat}/*.png"))
         if i == 0:
             counter = nstim
         if nstim != counter:
             raise ValueError(f"Number of stim for category {cat} is different from the others")
         
-def check_img_txt(input_dir):
+def check_img_txt(input_dir, lang):
     ''' Verifiy that for each text stim, there is a associated image stim.'''
-    all_img = sorted(glob.glob(f"{input_dir}/stims/*/*img.png"))
-    all_txt = sorted(glob.glob(f"{input_dir}/stims/*/*txt.png"))
+    all_img = sorted(glob.glob(f"{input_dir}/stims/{lang}/*/*img.png"))
+    all_txt = sorted(glob.glob(f"{input_dir}/stims/{lang}/*/*txt.png"))
     for img in all_img:
         txt = img.replace('img', 'txt')
         if txt not in all_txt:
@@ -296,40 +301,57 @@ def check_img_txt(input_dir):
  #             Question functions           #
 #############################################
 
-def get_slot_pos(y_pos):
+def get_slot_pos(y_pos:float)-> List[Tuple[float]]:
     ''' Return the positions of the slots in the trial question'''
     return [(-0.45, y_pos), (-0.15, y_pos), (0.15, y_pos), (0.45, y_pos), (0.75, y_pos)]
 
-def get_response_distance(correct_idx, response_idx, rt):
+def get_response_distance(correct_idx:int, response_idx:int, rt:float)-> int:
     ''' Return the distance between the correct and the response index. If the response time is 'NA', return 'NA' '''
     if rt == 'NA':
         return rt
     return abs(correct_idx - response_idx)
 
-def get_feedback_args(distance):
+def get_feedback_args(distance:int, lang:str)-> Tuple[str, str, bool, int]:
     '''Return the feedback text and color based on the distance between the correct and the response index.
     The function also returns a boolean indicating if the response was correct'''
+    if lang == 'fr':
+        txt = 'Trop lent!'
+    else:
+        txt = 'Too slow!'
     feedback_map = {
-        'NA': ("Trop lent!", "red", False, 0),
+        'NA': (txt, "red", False, 0),
         0: ("Correct!\n+ 3pt", "green", True, 3),
     }
     return feedback_map.get(distance, ("Incorrect!\n+ 0pt", "red", False, 0))
 
-def get_trial_feedback(n_points, max_points):
+def get_trial_feedback(n_points:int, max_points:int, lang:str)-> str:
     '''Return the feedback text based on the number of points obtained'''
-    if n_points == 0:
-        return f"Dommage! Vous n'avez gagné aucun point sur {max_points}."
-    elif n_points < max_points * 0.4:
-        return f"Pas mal, vous avez gagné {n_points} points sur {max_points}. Continuez à essayer !"
-    elif n_points < max_points * 0.7:
-        return f"Bien joué! Vous avez obtenu {n_points} points sur {max_points}." 
-    elif n_points < max_points:
-        return f"Excellent! Vous avez presque réussi avec {n_points} points sur {max_points}."
-    elif n_points == max_points:
-        return f"Bravo! Score parfait : {n_points} sur {max_points} !"
-    
-def get_reward_sound(reward_sounds, n_points):
-    ''' Return the reward sound based on the number of points obtained for this question.'''
+    messages = {
+        'en': [
+            (0, f"Too bad! You didn't win any points out of {max_points}."),
+            (0.4, f"Not bad, you won {n_points} points out of {max_points}. Keep trying!"),
+            (0.7, f"Well done! You got {n_points} points out of {max_points}."),
+            (1.0, f"Excellent! You almost made it with {n_points} points out of {max_points}."),
+            (1.0, f"Bravo! Perfect score: {n_points} out of {max_points} !")
+        ],
+        'fr': [
+            (0, f"Dommage! Vous n'avez gagné aucun point sur {max_points}."),
+            (0.4, f"Pas mal, vous avez gagné {n_points} points sur {max_points}. Continuez à essayer !"),
+            (0.7, f"Bien joué! Vous avez obtenu {n_points} points sur {max_points}."),
+            (1.0, f"Excellent! Vous avez presque réussi avec {n_points} points sur {max_points}."),
+            (1.0, f"Bravo! Score parfait : {n_points} sur {max_points} !")
+        ]
+    }
+    lang = lang if lang in messages else 'fr'  # default french
+    score_ratio = n_points / max_points if max_points > 0 else 0
+    for threshold, message in messages[lang]:
+        if score_ratio <= threshold:
+            return message
+
+    return messages[lang][-1][1] # if issue, return the last message
+
+def get_reward_sound(reward_sounds, n_points:int):
+    ''' Return the reward sound (psychopy.sound) based on the number of points obtained for this question.'''
     if n_points < 3:
         return None
     elif n_points == 3:
@@ -337,7 +359,7 @@ def get_reward_sound(reward_sounds, n_points):
     else:
         raise ValueError(f"Invalid number of points: {n_points}")
 
-def run_question(tools, slots, start_item, end_item, rt_clock, global_clock, t_act):
+def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_clock, t_act:float)-> Tuple[int, float]:
     '''Run a question where the participant has to place the second item in the correct position.
     NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
     selectable)'''
@@ -422,7 +444,7 @@ def run_question(tools, slots, start_item, end_item, rt_clock, global_clock, t_a
 
     return current_index+1, resp_time
 
-def move_highlight(slots, current_index, direction=None):
+def move_highlight(slots:dict, current_index:int, direction:bool=None)-> int:
     ''' Move the highlight to the next or previous slot depending on direction
     
     Parameters
@@ -565,6 +587,66 @@ def test_generate_sequences(input_dir, seq_structures):
 *      /       \        *
 *************************   
 '''
+
+# was used when I needed to distribute 2*6 sequences. Current version works for 12 unique sequences. 
+def old_generate_run_org(input_dir, seq_structures) -> dict:
+    ''' Generate the organization of sequences in the runs. The function returns a dict with the blocks of each run.
+    It controls that the sequences are well distributed between the two runs, with minimal overlap'''
+
+    def get_pairs(string:str) -> List[str]:
+        '''Get the pairs of sequences in each block'''
+        return [''.join(pair) for pair in combinations(string, 2)]
+    
+    def get_repeated_pairs(pairs:list) -> List[str]:
+        ''' Return the repeated pairs in the list'''
+        normalized_items = [''.join(sorted(item)) for item in pairs] # reorder the letters in each string
+        counts = Counter(normalized_items)
+        repeated_items = [item for item, count in counts.items() if count > 1]
+        return repeated_items
+    
+    def get_unrepeated_seq(pairs:list, repeated_pairs) -> List[str]:
+        ''' Return sequences that are not in repeated pairs'''
+        pair_as_str = "".join(pairs)
+        rep_pairs_as_str = "".join(repeated_pairs)
+        unrepeated_seq = []
+        for pair in pair_as_str:
+            if (pair not in rep_pairs_as_str) and (pair not in unrepeated_seq):
+                unrepeated_seq.append(pair)
+        return unrepeated_seq
+
+    def gen_one_run(sequences: dict) -> Tuple[dict, List[str]]:
+        '''Generate one run with only 2 repeated pairs. Return the blocks, repeated pairs and unrepeated sequences'''
+        two_rep_pairs = False
+        while not two_rep_pairs: # Keep generating blocks until we get the best case scenario
+            blocks = distribute_sequences_block(sequences, 4)
+            pairs = []
+            for block in blocks.values():
+                pairs+=get_pairs(block)
+            rep_pairs = get_repeated_pairs(pairs)
+            unrep_seq = get_unrepeated_seq(pairs, rep_pairs)
+            if len(rep_pairs)==2: # 2 repeated pairs (the best case scenario)
+                two_rep_pairs = True
+        return blocks, rep_pairs, unrep_seq
+    
+    sequences = generate_sequences(input_dir, seq_structures)
+    # Generate two runs with unique repeated pairs between them (e.g. run1 AB, CF and run2 ED, FA)
+    running = True
+    while running:
+        blocks1, rep_pairs1, unrep_seq1 = gen_one_run(sequences)
+        blocks2, rep_pairs2, unrep_seq2 = gen_one_run(sequences)
+        # condition 1 : the standalone sequences are different in the two runs
+        four_standalone_seq = True if len(set(unrep_seq1+unrep_seq2))==4 else False
+        # condition 2 : the repeated pairs are unique between the two runs
+        counter = 0
+        for pair in rep_pairs1:
+            if pair not in rep_pairs2:
+                counter+=1
+        unique_repetitions = True if counter==2 else False
+        if unique_repetitions and four_standalone_seq:
+            running = False
+
+    run_org = {'run1': blocks1, 'run2': blocks2}
+    return run_org
 
 # not used in the current version of the experiment
 def check_positions(blocks):

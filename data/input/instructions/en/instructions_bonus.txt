@@ -1,0 +1,5 @@
+Run completed. You will now have to reconstruct the sequences.
+To select an item, click on it.
+To place it in a box, click on the box.
+Use the SPACE key to validate your answer or the ESC key to restart.
+You can only restart once you have placed all 5 items.
