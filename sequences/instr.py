@@ -12,7 +12,7 @@ def get_txt(lang:str, instr_fn:str)-> str:
 
 def read_instr(fn:str)-> str:
     ''' Read instruction text from file '''
-    with open(fn, 'r') as fn:
+    with open(fn, 'r', encoding='utf-8') as fn:
         txt = fn.read()
     return txt
 
