@@ -217,7 +217,7 @@ def initialize_run(debugging):
     logfn = f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}_cmseq-logs-{datetime.now().strftime('%Y%m%d-%H%M')}.log"
     os.makedirs(out_dir, exist_ok=True)
 
-    if len(os.listdir(out_dir)) > 5: # check if the output directory is not filled with old files
+    if len(os.listdir(out_dir)) > 10: # check if the output directory is not filled with old files
         if not debugging:
             print(f"--- Output directory {out_dir} is not empty, exiting... ---")
             quit()
