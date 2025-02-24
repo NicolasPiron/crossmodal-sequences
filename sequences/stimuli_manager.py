@@ -391,6 +391,7 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
     highlight_onset = None
     running = True
     global_clock.reset()
+    rt_clock.reset()
 
     while running:
 
