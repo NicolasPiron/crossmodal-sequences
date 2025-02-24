@@ -29,11 +29,7 @@ def execute_run(debugging=False):
     tools = initialize_run(debugging) # seed is set here. Tools contains a lot of useful stuff
     logger = tools['logger']
     exp_info = tools['exp_info']
-<<<<<<< HEAD
-
-=======
     # Generate the multimodal sequences of items and the organization of the modality for presenation and questions
->>>>>>> addseq
     try:
         amodal_sequences, question_mod_org, first_seq_mod_org = setup_sequence_distribution(tools)
     except Exception as exc:
