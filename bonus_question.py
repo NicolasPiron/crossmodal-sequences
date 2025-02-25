@@ -170,12 +170,12 @@ def ask_all_seq(subject_id, run_id, lang, win_dict=None):
 
     out_dir = f"{pm.output_dir}/sub-{subject_id}"
     try:
-        sm.r_and_set_seed(out_dir)
+        seed = sm.r_and_set_seed(out_dir)
     except FileNotFoundError as e:
         print(e)
 
     all_amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang)
-    two_run_org = sm.generate_run_org(all_amodal_sequences)
+    two_run_org = sm.generate_run_org(all_amodal_sequences, seed=seed)
     amodal_sequences = extract_sequences(two_run_org, run_id, all_amodal_sequences)
     amodal_sequences = shuffle_dict(amodal_sequences)
 

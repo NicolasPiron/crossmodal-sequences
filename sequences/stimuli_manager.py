@@ -75,7 +75,7 @@ def count_dupes(arr:List)-> int:
 
 def sample_n_throw(arr:List, n:int=3) -> Tuple[List, List]:
     '''Sample n items from a list and remove them'''
-    sample = random.sample(set(arr), n)
+    sample = random.sample(sorted(set(arr)), n)
     for s in sample:
         arr.remove(s)
     return sample, arr
@@ -131,7 +131,7 @@ def distribute_sequences_block(seq_names: list, n_blocks: int) -> Dict[str, List
 
     return blocks
 
-def generate_run_org(sequences:Dict[str, List]) -> Dict[str, Dict[str, List[str]]]:
+def generate_run_org(sequences:Dict[str, List], seed) -> Dict[str, Dict[str, List[str]]]:
     ''' Generate the organization of sequences in the runs. The function returns a dict with the blocks of each run.
     It controls that the sequences are well distributed between the two runs.
     If the experiment crashes, the splits will stay the same, but the blocks org will change. This is due to the
@@ -155,7 +155,7 @@ def generate_run_org(sequences:Dict[str, List]) -> Dict[str, Dict[str, List[str]
         return repeated_items
 
     def gen_one_run(sequences: List) ->  Dict[str, List[str]]:
-        '''Generate one run with only 2 repeated pairs. Return the blocks, repeated pairs and unrepeated sequences.
+        '''Generate one run with only 2 repeated pairs.
         Returned dict looks like this {'block1': ['L', 'E', 'G'], 'block2':[...], ...}'''
         two_rep_pairs = False
         while not two_rep_pairs: # Keep generating blocks until we get the best case scenario
@@ -168,6 +168,7 @@ def generate_run_org(sequences:Dict[str, List]) -> Dict[str, Dict[str, List[str]
                 two_rep_pairs = True
         return blocks
     
+    random.seed(seed) # has to set again because the function is called multiple times
     seq_names = list(sequences.keys())
     seq_separated = distribute_sequences_run(seq_names, 2)
     run_org = {

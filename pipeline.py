@@ -34,7 +34,7 @@ def execute_run(debugging=False):
         amodal_sequences, question_mod_org, first_seq_mod_org = setup_sequence_distribution(tools)
     except Exception as exc:
         fl.log_exceptions(f"An error occurred during sequence generation: {exc}", logger, tools['win'])
-    two_run_org = sm.generate_run_org(amodal_sequences) # get the global oorganization of sequences for the two runs
+    two_run_org = sm.generate_run_org(amodal_sequences, seed=tools['seed']) # get the global oorganization of sequences for the two runs
     run_org = two_run_org[f'run{int(exp_info["run"])}'] # get the organization of sequences for the current run
     logger.info(f'=============== Start of run {exp_info["run"]} ===============')
     logger.info(f'run org: {run_org}')
@@ -276,6 +276,7 @@ def initialize_run(debugging):
         'exp_info': exp_info,
         'q_reward_sounds': q_reward_sounds,
         'reward_max': reward_max,
+        'seed': seed,
         'out_dir': out_dir
     }
     
@@ -478,10 +479,10 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     t_act = pm.t_act
     t_fb = pm.t_fb
     if tools['debugging']:
-        t_viz_cue = pm.t_viz_cue
-        t_viz_target = pm.t_viz_target
-        t_act = pm.t_act
-        t_fb = pm.t_fb
+        t_viz_cue = 0.1
+        t_viz_target = 0.1
+        t_act = 0.1
+        t_fb = 0.1
 
     background.draw()
     cue_viz.draw()
