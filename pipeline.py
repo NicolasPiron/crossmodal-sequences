@@ -248,7 +248,7 @@ def initialize_run(debugging):
     if exp_info['run'] == '01': # if the experiment crashes, the sequences and run org will be the same
         seed = sm.w_and_set_seed(debugging, out_dir)
     else:
-        seed = sm.r_and_set_seed(out_dir) # PROBLEM HERE? the seed is set but randomization is fucked
+        seed = sm.r_and_set_seed(out_dir) 
 
     logger = logging.getLogger()
     logger.info('Experiment started.')

@@ -365,10 +365,15 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
     NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
     selectable)'''
 
+    demo = False # added after the demo was implemented
+    if 'demo' in tools:
+        demo = True
+
     wait_fun = tools['wait_fun']
     event_fun = tools['event_fun']
     clear_event_fun = tools['clear_event_fun']
-    trig_fun = tools['trig_fun']
+    if not demo:
+        trig_fun = tools['trig_fun']
 
     def draw_all():
         ''' Draw the slots, the start item and the background'''
@@ -411,23 +416,29 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
 
             if "left" in keys:
                 current_index = move_highlight(slots, current_index=current_index, direction="left")
-                tools['logger'].info(f"Left key pressed, current index: {current_index+1}")
+                if not demo:
+                    trig_fun(current_index+101) # WARNING what is this?
+                    tools['logger'].info(f"Left key pressed, current index: {current_index+1}")
 
             if "right" in keys:
                 current_index = move_highlight(slots, current_index=current_index, direction="right")
-                tools['logger'].info(f"Right key pressed, current index: {current_index+1}")
+                if not demo:
+                    # should there be a trigger here?
+                    tools['logger'].info(f"Right key pressed, current index: {current_index+1}")
 
             if "space" in keys:
-                trig_fun(current_index+101) # trigger is the slot index + 101 TODO: change this to something adaptive
+                if not demo:
+                    trig_fun(current_index+101) # trigger is the slot index + 101 TODO: change this to something adaptive
                 resp_time = rt_clock.getTime()
                 global_clock.reset() # reset the global clock to avoid time out
                 reset_highlight(slots)
                 end_item.pos = slots[current_index]["rect"].pos # move the end item to the selected slot
                 draw_all()
                 tools['win'].flip()
-                tools['logger'].info('Space key pressed')
-                tools['logger'].info(f'Index selected: {current_index+1}')
-                tools['logger'].info(f'RT: {resp_time}')
+                if not demo:
+                    tools['logger'].info('Space key pressed')
+                    tools['logger'].info(f'Index selected: {current_index+1}')
+                    tools['logger'].info(f'RT: {resp_time}')
                 wait_fun(1)
                 running = False
 
@@ -435,9 +446,10 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
                 running = False
 
             if global_clock.getTime() > t_act:
-                trig_fun(200) 
-                tools['logger'].info('Time out')
-                tools['logger'].info(f'clock time: {global_clock.getTime()}')
+                if not demo:
+                    trig_fun(200) 
+                    tools['logger'].info('Time out')
+                    tools['logger'].info(f'clock time: {global_clock.getTime()}')
                 running = False
                 resp_time = 'NA'
                 reset_highlight(slots)
