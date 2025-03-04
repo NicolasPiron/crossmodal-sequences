@@ -478,11 +478,11 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     t_viz_target = pm.t_viz_target
     t_act = pm.t_act
     t_fb = pm.t_fb
-    if tools['debugging']:
-        t_viz_cue = 0.1
-        t_viz_target = 0.1
-        t_act = 0.1
-        t_fb = 0.1
+    # if tools['debugging']:
+    #     t_viz_cue = 0.1
+    #     t_viz_target = 0.1
+    #     t_act = 0.1
+    #     t_fb = 0.1
 
     background.draw()
     cue_viz.draw()
@@ -700,8 +700,8 @@ def present_stimulus(tools, sequence, i, stim, modality):
     win = tools['win']
     aspect_ratio = tools['aspect_ratio']
     background = tools['background']
-    t_stim = pm.stim_dur + sm.jitter_isi(pm.jitter)
-    t_isi = pm.isi_dur
+    t_stim = pm.stim_dur # where should the jitter be added? Stim or ISI?
+    t_isi = pm.isi_dur + sm.jitter_isi(pm.jitter)
     if debugging:
         t_stim = 0.01
         t_isi = 0.01

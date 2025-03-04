@@ -390,8 +390,6 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
         for slot in slots:
             slot["highlight"].opacity = 0
 
-    # if tools['debugging']:
-    #     t_act = 2
     iterations = 0
     current_index = 0
     highlight_onset = None
@@ -481,13 +479,15 @@ def move_highlight(slots:dict, current_index:int, direction:bool=None)-> int:
     if direction == "left":
         if current_index > 0:
             current_index -= 1
+        elif current_index == 0:
+            current_index = current_index # removed the possibility to jump from position 1 to 5 
         else:
             current_index = len(slots) - 1
     elif direction == "right":
         if current_index < len(slots) - 1:
             current_index += 1
         else:
-            current_index = 0
+            current_index = current_index # removed the possibility to jump from position 5 to 1
     # Set the highlight on the current slot
     slots[current_index]["highlight"].opacity = 1
     return current_index

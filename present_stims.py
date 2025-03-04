@@ -1,6 +1,7 @@
 from psychopy import visual, event, core
 import glob
 import os
+import re
 import sequences.params as pm
 import sequences.flow as fl
 import sequences.stimuli_manager as sm
@@ -34,8 +35,16 @@ def present_stims(lang="fr"):
     event.waitKeys(keyList=['space'])
 
     for item in all_items: # match the image and the text
-        item_img = [img for img in all_img if item in img][0]
-        item_txt = [txt for txt in all_txt if item in txt][0]
+        
+        # use regex with word boundaries to match exact words. # The \b ensures a word boundary (had an issue with 'ear' and 'bear')
+        item_img_list = [img for img in all_img if re.search(rf'\b{item}_img\.png\b', img)] 
+        item_txt_list = [txt for txt in all_txt if re.search(rf'\b{item}_txt\.png\b', txt)]
+
+        if item_img_list and item_txt_list:
+            item_img = item_img_list[0]
+            item_txt = item_txt_list[0]
+        else:
+            print(f'Warning: No match found for {item}')
 
         win.flip()
         core.wait(0.02) # to add a white flash between stims
