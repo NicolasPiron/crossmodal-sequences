@@ -124,7 +124,8 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
             trial_seq_org=trial_seq_org, 
             question_mod_org=question_mod_org
         )
-        
+    
+    post_block_break(tools)
     logger = tools['logger']
     logger.info(f'Block {tracker["block_id"]} completed successfully.')
     logger.info('========== End of block ==========')
@@ -198,6 +199,27 @@ def handle_questioning(tools, amodal_sequences, tracker, trial_seq_org, question
     )
 
     return tracker
+
+def post_block_break(tools):
+    ''' Function to present a break between blocks. Returns nothing. '''
+    win = tools['win']
+    background = tools['background']
+    if tools['exp_info']['lang'] == 'fr':
+        txt = "Pause."
+    else:
+        txt = "Break."
+    text_stim = visual.TextStim(
+        win=win,
+        text=txt,
+        font="Arial",
+        color='black', 
+        height=pm.text_height,
+        units='norm'
+    )
+    background.draw()
+    text_stim.draw()
+    win.flip()
+    core.wait(pm.t_post_block)
 
 def initialize_run(debugging):
     ''' Initializes a run. Creates the output dir, set or get the seed to control randomization and 
@@ -605,9 +627,9 @@ def initialize_block(tools, tracker, run_org):
     logger.info(f'sequences: {chosen_sequences}')
 
     if tools['exp_info']['lang'] == 'fr':
-        txt = f"Bloc {tracker['block_id']} \nAppuyez sur la touche ESPACE pour commencer!"
+        txt = f"Bloc {tracker['block_id']} \nAttendez le feu vert de l'experimentateur, puis appuyez sur la touche ESPACE pour commencer!"
     else:
-        txt = f"Block {tracker['block_id']} \nPress the SPACE key to start!"
+        txt = f"Block {tracker['block_id']} \nWait for the experimenter's signal, then press the SPACE key to start!"
     block_info = visual.TextStim(win=win,
         text=txt,
         pos=(0, 0),

@@ -83,6 +83,7 @@ t_act = 2
 t_fb = 1
 t_iqi = 0.5
 t_post_q = 3
+t_post_block = 30 # To adjust after discussion
 q_img_size = 0.2
 q_slot_size = q_img_size + 0.001
 hl_size = q_slot_size + 0.001
