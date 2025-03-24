@@ -168,11 +168,7 @@ def ask_all_seq(subject_id, run_id, lang, win_dict=None):
     background = win_dict['background']
     win.mouseVisible = True
 
-    out_dir = f"{pm.output_dir}/sub-{subject_id}"
-    try:
-        seed = sm.r_and_set_seed(out_dir)
-    except FileNotFoundError as e:
-        print(e)
+    seed = sm.set_seed(subject_id)
 
     all_amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang)
     two_run_org = sm.generate_run_org(all_amodal_sequences, seed=seed)

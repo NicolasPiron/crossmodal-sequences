@@ -31,7 +31,7 @@ img_bg_size = 0.41
 win_size = [1512, 982]
 isi_dur = 1.5
 stim_dur = 0.5
-jitter = 0.2
+jitter = 0.2 # TODO: change to shorter value
 prefs.hardware['audioLib'] = ['PTB']
 use_mock_port = True
 pport = None
@@ -47,6 +47,7 @@ categories = {
 n_amodal_items_per_cat = 6
 n_blocks = 4
 n_trials = 3
+n_seq = 6
 n_blocks_demo = 1
 n_trials_demo = 1
 

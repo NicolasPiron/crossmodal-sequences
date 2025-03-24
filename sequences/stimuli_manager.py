@@ -2,37 +2,16 @@ from typing import Dict, List, Tuple
 import random
 import os
 import glob
-from pathlib import Path
 from itertools import permutations, combinations
 from collections import Counter, defaultdict
-import sequences.params as pm
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
-def w_and_set_seed(debugging:bool, out_dir:str)-> int:
-    ''' Write a seed in a file and return it. If debugging is True, the seed is fixed to the one in params.py'''
-    if debugging:
-        seed = pm.seed
-    else:
-        seed = random.randint(0, 1000)
+def set_seed(subject_id:str)-> int:
+    ''' Write a seed in a file and return it. The seed is based on the subject ID'''
+    seed = int(subject_id)
     random.seed(seed)
-    w_seed(out_dir, seed)
     return seed
-
-def w_seed(out_dir:str, seed:int)-> None:
-    ''' Write the seed in a file'''
-    seed_fn = Path(f"{out_dir}/seed.txt")
-    with open(seed_fn, "w") as f:
-        f.write(str(seed))
-
-def r_and_set_seed(out_dir:str)-> int:
-    ''' Read the seed from a file and set it'''
-    seed_fn = Path(f"{out_dir}/seed.txt")
-    with open(seed_fn, "r") as f:
-        seed = f.read()
-    random.seed(int(seed))
-    print(f"Seed set to {seed}")
-    return int(seed)
 
 def jitter_isi(value:float=0.2)-> float:
     '''Return a random jittered inter-stimulus interval'''
