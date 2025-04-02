@@ -44,7 +44,7 @@ prefs.hardware['audioLib'] = ['PTB']
 if os_name == "Windows":
     screen = 1
     use_mock_port = False
-    pport = '2FB8'
+    pport = 0x2FB8
 elif os_name == "Linux":
     screen = 1
     use_mock_port = False
