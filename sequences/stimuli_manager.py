@@ -351,7 +351,7 @@ def get_reward_sound(reward_sounds, n_points:int):
     else:
         raise ValueError(f"Invalid number of points: {n_points}")
 
-def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_clock, t_act:float)-> Tuple[int, float]:
+def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_clock, t_act:float, key_dict:dict)-> Tuple[int, float]:
     '''Run a question where the participant has to place the second item in the correct position.
     NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
     selectable)'''
@@ -360,6 +360,9 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
     if 'demo' in tools:
         demo = True
 
+    left_key = key_dict['left_key']
+    right_key = key_dict['right_key']
+    confirm_key = key_dict['confirm_key']
     wait_fun = tools['wait_fun']
     event_fun = tools['event_fun']
     clear_event_fun = tools['clear_event_fun']
@@ -403,19 +406,19 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
 
             keys = event_fun()
 
-            if "left" in keys:
+            if left_key in keys:
                 current_index = move_highlight(slots, current_index=current_index, direction="left")
                 if not demo:
                     trig_fun(current_index+101) # WARNING what is this?
                     tools['logger'].info(f"Left key pressed, current index: {current_index+1}")
 
-            if "right" in keys:
+            if right_key in keys:
                 current_index = move_highlight(slots, current_index=current_index, direction="right")
                 if not demo:
                     # should there be a trigger here?
                     tools['logger'].info(f"Right key pressed, current index: {current_index+1}")
 
-            if "space" in keys:
+            if confirm_key in keys:
                 if not demo:
                     trig_fun(current_index+101) # trigger is the slot index + 101 TODO: change this to something adaptive
                 resp_time = rt_clock.getTime()

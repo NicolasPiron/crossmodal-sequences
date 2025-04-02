@@ -10,6 +10,7 @@ from sequences import flow as fl
 from sequences import params as pm
 from sequences import instr as it
 import byte_triggers as bt
+import platform
 from sequences.common import get_win_dict
 from bonus_question import ask_all_seq
 
@@ -291,6 +292,7 @@ def initialize_run(debugging):
     seed = sm.set_seed(exp_info['ID'])
 
     logger = logging.getLogger()
+    logger.info(f'running on {platform.system()}')
     logger.info('Experiment started.')
     logger.info(f'Seed: {seed}')
     logger.info(f'Participant ID: {exp_info["ID"]}')
@@ -347,7 +349,7 @@ def present_instructions(tools):
         background.draw()
         instr.draw()
         win.flip()
-        fl.check_escape_or_break(tools, pause_key=pm.pause_key)
+        fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
         event.waitKeys(keyList=['space'])
 
     if exp_info['lang'] == 'fr':
@@ -448,7 +450,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     logger.info(f'question number: {tracker["question_id"]}')
     logger.info(f'sequence name: {seq_name}')
-    fl.check_escape_or_break(tools, pause_key=pm.pause_key)
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
 
     sequence = amodal_sequences[seq_name] # redefine the sequence to be used for the question
     if seq_name in tracker['used_items']: # check if the items used for the question have already been used
@@ -560,13 +562,14 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         rt_clock=rt_clock,
         global_clock=core.Clock(),
         t_act=t_act,
+        key_dict=pm.key_dict,
     )
 
     distance = sm.get_response_distance(resp_idx, idx2, rt)
     feedback_txt, font_color, correct, n_points = sm.get_feedback_args(distance, lang=exp_info['lang'])
     tracker['points_attributed'] += n_points
 
-    fl.check_escape_or_break(tools, pause_key=pm.pause_key)
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
 
     feedback = visual.TextStim(win=win,
         text=feedback_txt,
@@ -772,7 +775,7 @@ def present_stimulus(tools, sequence, i, stim, modality): # TODO: add sound
     stim_cat = sm.get_cat_from_stim(stim)
     trig = pm.triggers[stim_cat][modality]['seq'] # keys are 'img'/'txt' and 'seq'/'quest'
                         
-    fl.check_escape_or_break(tools, pause_key=pm.pause_key)
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
     stim_image = visual.ImageStim(win=win,
         image=stim,
         size=(pm.img_size, pm.img_size*aspect_ratio)
@@ -814,11 +817,8 @@ def clear_stuff(win):
     event.clearEvents()
 
 def pipeline(debugging=False):
-    print('a')
     tools = execute_run(debugging=debugging)
-    print('b')
     clear_stuff(tools['win'])
-    print('c')
     # TODO: add 1.5 min break
     # TODO: add info about which sequences are rewarded
     # TODO: add 1.5 min break

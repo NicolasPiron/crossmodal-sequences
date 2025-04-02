@@ -1,6 +1,8 @@
 from psychopy import prefs
 from pathlib import Path
+import platform
 
+os_name = platform.system()
 # paths
 input_dir = Path("data/input")
 output_dir = Path("data/output")
@@ -20,10 +22,12 @@ instr_fnames = {
     'instr_stimpres2_fn' : 'instr_stim_pres2.txt',
     'instr_stimpres3_fn' : 'instr_stim_pres3.txt',
 }
-right_key = '1'
-confirm_key = '2'
-left_key = '3'
-pause_key = '4'
+key_dict = {
+    'left_key' : '1',
+    'confirm_key' : '2',
+    'right_key' : '3',
+    'pause_key' : '4', 
+}
 
 # stim config
 t = 0.001 # speed of text presentation
@@ -38,8 +42,16 @@ isi_dur = 1.5
 stim_dur = 0.5
 jitter = 0.2 # TODO: change to shorter value
 prefs.hardware['audioLib'] = ['PTB']
-use_mock_port = True
-pport = None
+if os_name == "Windows":
+    use_mock_port = False
+    pport = '2FB8'
+elif os_name == "Linux":
+    use_mock_port = False
+    pport = ''
+elif os_name == "Darwin":
+    use_mock_port = True
+    pport = None
+
 categories = {
     'animals':0,
     'bodyparts':1,
