@@ -31,8 +31,7 @@ key_dict = {
 
 # stim config
 t = 0.001 # speed of text presentation
-screen = 0 
-seed = 42
+#seed = 42
 bg_color = (255, 255, 255)
 text_height = 0.08
 img_size = 0.4
@@ -43,12 +42,15 @@ stim_dur = 0.5
 jitter = 0.2 # TODO: change to shorter value
 prefs.hardware['audioLib'] = ['PTB']
 if os_name == "Windows":
+    screen = 1
     use_mock_port = False
     pport = '2FB8'
 elif os_name == "Linux":
+    screen = 1
     use_mock_port = False
     pport = ''
 elif os_name == "Darwin":
+    screen = 0
     use_mock_port = True
     pport = None
 
