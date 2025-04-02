@@ -287,7 +287,7 @@ def initialize_run(debugging):
     if pm.use_mock_port:
         pport = bt.MockTrigger()
     else:
-        pport = bt.ParallelPortTrigger(pm.pport, delay=10)
+        pport = bt.ParallelPortTrigger(pm.pport, port_type='pport', delay=10)
 
     seed = sm.set_seed(exp_info['ID'])
 
