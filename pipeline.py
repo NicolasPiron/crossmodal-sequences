@@ -299,7 +299,7 @@ def initialize_run(debugging):
 
     reward_max = sound.Sound(pm.sound0_fn)
     q_reward_sounds = [sound.Sound(fn) for fn in pm.q_reward_fn]
-    tone_mapping = sm.get_pure_tone_dict() #TODO : add this to the params file
+    # tone_mapping = sm.get_pure_tone_dict() #TODO : add this to the params file
     win_dict = get_win_dict()
     win_dict['win'].mouseVisible = False
 
@@ -331,7 +331,7 @@ def initialize_run(debugging):
         'out_dir': out_dir,
         'starting_point': starting_point,
         'tracker': tracker,
-        'tone_mapping': tone_mapping,
+        # 'tone_mapping': tone_mapping,
     }
     
     return tools
@@ -754,7 +754,7 @@ def present_stimuli(tools, sequence, stims, modality):
         present_stimulus(tools, sequence, i, stim, modality)
     return None
 
-def present_stimulus(tools, sequence, i, stim, modality, sound): # TODO: add sound
+def present_stimulus(tools, sequence, i, stim, modality): # TODO: add sound
     ''' Present a single stimulus. Returns nothing. '''
     
     debugging = tools['debugging']
@@ -788,7 +788,7 @@ def present_stimulus(tools, sequence, i, stim, modality, sound): # TODO: add sou
 
     win.callOnFlip(pport.signal, trig)
     win.flip()
-    sound.play()
+    #sound.play()
     core.wait(t_stim)
 
     # Display fixation cross
