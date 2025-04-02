@@ -7,6 +7,18 @@ from collections import Counter, defaultdict
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
+def distribute_tones(tone_names:List[str], seq_names:List[str])-> Dict[str, str]:
+    ''' Attribute a tone to each sequence. This is done randomly for each participant.'''
+    random.shuffle(tone_names)
+    tone_dict = {}
+    for i, seq in enumerate(seq_names):
+        tone_dict[seq] = tone_names[i]
+    return tone_dict
+
+def get_tone_name(input_dir:str)-> List[str]:
+    ''' '''
+    ...
+
 def set_seed(subject_id:str)-> int:
     ''' Write a seed in a file and return it. The seed is based on the subject ID'''
     seed = int(subject_id)

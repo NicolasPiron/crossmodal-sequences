@@ -20,6 +20,7 @@ instr_fnames = {
     'instr_stimpres2_fn' : 'instr_stim_pres2.txt',
     'instr_stimpres3_fn' : 'instr_stim_pres3.txt',
 }
+pause_key = 'b'
 # stim config
 t = 0.001 # speed of text presentation
 screen = 0 

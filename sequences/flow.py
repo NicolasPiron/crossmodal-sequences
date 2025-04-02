@@ -9,8 +9,8 @@ def log_exceptions(message, logger, win):
     win.close()
     core.quit()
 
-def check_escape(tools):
-    ''' Function to check for the escape key '''
+def check_escape_or_break(tools, pause_key='b'):
+    ''' Function to check for the escape key or break key '''
     keys = event.getKeys()
     if 'escape' in keys:
         print("--- Escape key pressed, exiting... ---")
@@ -18,7 +18,15 @@ def check_escape(tools):
             tools['logger'].info("Escape key pressed, exiting...")
         tools['win'].close()
         core.quit()
+    elif pause_key in keys:
+        print(f"--- Break key pressed, pausing the experiment. Press {pause_key} to resume ---")
+        if tools['logger']:
+            tools['logger'].info("Break key pressed, pausing the experiment ...")
+        event.waitKeys(keyList=[pause_key])
+        if tools['logger']:
+            tools['logger'].info("Break key pressed again, resuming the experiment ...")
 
+    
 def type_text(text, win, color="black", height=0.08, background=None, t=0.03):
     ''' Function to display typing effect '''
     displayed_text = ""  # Start with an empty string

@@ -19,6 +19,7 @@ def extract_log_info(log_fn):
             if match:
                 parsed_logs.append(match.groupdict())
 
+    # split rows of the log file into separate fields
     enhanced_logs = []
     for log in parsed_logs:
         message = log['message']
@@ -48,11 +49,7 @@ def write_log_info_csv(enhanced_logs, out_fn):
         for log in enhanced_logs:
             writer.writerow(log)
 
-block = 1
-first_block = block - 1
-print(first_block )
-n_blocks = 4 - first_block 
-print(n_blocks)
 
-for i in range(first_block+1, n_blocks+1):
-    print(i)
+if __name__ == "__main__":
+    for i in range(3, 5):
+        print(i)

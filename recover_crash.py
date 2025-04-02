@@ -11,9 +11,9 @@ def recover_position_info(csv_fn):
     block = df[df['Name'] == 'block'].iloc[-1:]['Value'].values[0]
     trial = df[df['Name'] == 'trial'].iloc[-1:]['Value'].values[0]
     sequence = df[df['Name'] == 'sequence number'].iloc[-1:]['Value'].values[0]
-    print(f'Run: {run}, Block: {block}, Trial: {trial}, Sequence: {sequence}')
-
-    ## if question nr has a higher index (presented last) than the sequence nr, we are in the question phase
+    stimulus = df[df['Name'] == 'stimulus number'].iloc[-1:]['Value'].values[0]
+    print(f'Run: {run}, Block: {block}, Trial: {trial}, Sequence: {sequence}, Stimulus: {stimulus}')
+    # if question nr has a higher index (presented last) than the sequence nr, we are in the question phase
 
 if __name__ == '__main__':
     subject_id = input('Enter the subject ID: ')

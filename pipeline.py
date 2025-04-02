@@ -54,12 +54,11 @@ def execute_run(debugging=False):
         n_skip = int(tools['starting_point']['block']) - 1 # -1 because we use indices but the user enters the block number
     else:
         n_skip = 0
-    n_blocks = pm.n_blocks - n_skip # 4 minus the blocks we skip
 
     # iterate over the blocks - the actual experiment
     try:
 
-        for i in range(n_skip+1, n_blocks+1): # +1 because we want to include the last block and start from 1
+        for i in range(n_skip+1, pm.n_blocks+1): # +1 because we want to include the last block and start from 1
             block_org = full_block_org[f'block{i}']
             tools['tracker']['block_id'] = i
             initialize_block(
@@ -116,9 +115,9 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
             n_skip = 0
     else:
         n_skip = 0
-    n_trials = pm.n_trials - n_skip # 3 minus the trials we skip
 
-    for j in range(n_skip+1, n_trials+1): # +1 because we want to include the last trial and start from 1. 
+    for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
+        print(j)
         tools['tracker']['trial_id'] = j
         trial_seq_org, trial_mod_org = initialize_trial_sequences(
             tools=tools,
@@ -300,6 +299,7 @@ def initialize_run(debugging):
 
     reward_max = sound.Sound(pm.sound0_fn)
     q_reward_sounds = [sound.Sound(fn) for fn in pm.q_reward_fn]
+    tone_mapping = sm.get_pure_tone_dict() #TODO : add this to the params file
     win_dict = get_win_dict()
     win_dict['win'].mouseVisible = False
 
@@ -331,6 +331,7 @@ def initialize_run(debugging):
         'out_dir': out_dir,
         'starting_point': starting_point,
         'tracker': tracker,
+        'tone_mapping': tone_mapping,
     }
     
     return tools
@@ -346,7 +347,7 @@ def present_instructions(tools):
         background.draw()
         instr.draw()
         win.flip()
-        fl.check_escape(tools)
+        fl.check_escape_or_break(tools, pause_key=pm.pause_key)
         event.waitKeys(keyList=['space'])
 
     if exp_info['lang'] == 'fr':
@@ -447,7 +448,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     logger.info(f'question number: {tracker["question_id"]}')
     logger.info(f'sequence name: {seq_name}')
-    fl.check_escape(tools)
+    fl.check_escape_or_break(tools, pause_key=pm.pause_key)
 
     sequence = amodal_sequences[seq_name] # redefine the sequence to be used for the question
     if seq_name in tracker['used_items']: # check if the items used for the question have already been used
@@ -565,7 +566,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     feedback_txt, font_color, correct, n_points = sm.get_feedback_args(distance, lang=exp_info['lang'])
     tracker['points_attributed'] += n_points
 
-    fl.check_escape(tools)
+    fl.check_escape_or_break(tools, pause_key=pm.pause_key)
 
     feedback = visual.TextStim(win=win,
         text=feedback_txt,
@@ -732,9 +733,8 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
             n_skip = 0
     else:
         n_skip = 0
-    n_seq = pm.n_seq - n_skip # 6 minus the sequence we skip
 
-    for k in range(n_skip+1, n_seq+1): # using +1 to be consistant with the other loops, but not the nicest way to do it (k-1 under)
+    for k in range(n_skip+1, pm.n_seq+1): # using +1 to be consistant with the other loops, but not the nicest way to do it (k-1 under)
         modality = trial_mod_org[k-1]
         sequence_name = trial_seq_org[k-1]
         sequence = amodal_sequences[sequence_name]
@@ -754,7 +754,7 @@ def present_stimuli(tools, sequence, stims, modality):
         present_stimulus(tools, sequence, i, stim, modality)
     return None
 
-def present_stimulus(tools, sequence, i, stim, modality):
+def present_stimulus(tools, sequence, i, stim, modality, sound): # TODO: add sound
     ''' Present a single stimulus. Returns nothing. '''
     
     debugging = tools['debugging']
@@ -772,7 +772,7 @@ def present_stimulus(tools, sequence, i, stim, modality):
     stim_cat = sm.get_cat_from_stim(stim)
     trig = pm.triggers[stim_cat][modality]['seq'] # keys are 'img'/'txt' and 'seq'/'quest'
                         
-    fl.check_escape(tools)
+    fl.check_escape_or_break(tools, pause_key=pm.pause_key)
     stim_image = visual.ImageStim(win=win,
         image=stim,
         size=(pm.img_size, pm.img_size*aspect_ratio)
@@ -788,6 +788,7 @@ def present_stimulus(tools, sequence, i, stim, modality):
 
     win.callOnFlip(pport.signal, trig)
     win.flip()
+    sound.play()
     core.wait(t_stim)
 
     # Display fixation cross
@@ -813,9 +814,11 @@ def clear_stuff(win):
     event.clearEvents()
 
 def pipeline(debugging=False):
+    print('a')
     tools = execute_run(debugging=debugging)
+    print('b')
     clear_stuff(tools['win'])
-
+    print('c')
     # TODO: add 1.5 min break
     # TODO: add info about which sequences are rewarded
     # TODO: add 1.5 min break
