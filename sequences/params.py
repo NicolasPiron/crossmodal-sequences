@@ -21,6 +21,7 @@ instr_fnames = {
     'instr_stimpres_fn' : 'instr_stim_pres.txt',
     'instr_stimpres2_fn' : 'instr_stim_pres2.txt',
     'instr_stimpres3_fn' : 'instr_stim_pres3.txt',
+    'instr_pause_fn': 'instr_pause.txt', 
 }
 key_dict = {
     'left_key' : '1',
@@ -94,7 +95,6 @@ seq_structures = {
     'L': [5, 0, 4, 3, 1, 2],
 }
 
-
 # params for the in-task questions
 t_prep = 2
 t_viz_cue = 5
@@ -104,6 +104,7 @@ t_fb = 1
 t_iqi = 0.5
 t_post_q = 3
 t_post_block = 30 # To adjust after discussion
+t_post_run = 90
 q_img_size = 0.2
 q_slot_size = q_img_size + 0.001
 hl_size = q_slot_size + 0.001
@@ -114,59 +115,60 @@ max_points = 9
 bq_img_size = 0.1
 bq_hl_size = bq_img_size + 0.001
 
+# trigger mapping :
+# - trig1 : sequence + position -> between 11 and 126
+# - trig2 : category + modality -> between ...
+
+trig1 = {
+    'A':[11, 12, 13, 14, 15, 16],
+    'B':[21, 22, 23, 24, 25, 26],
+    'C':[31, 32, 33, 34, 35, 36],
+    'D': [41, 42, 43, 44, 45, 46],
+    'E': [51, 52, 53, 54, 55, 56],
+    'F': [61, 62, 63, 64, 65, 66],
+    'G': [71, 72, 73, 74, 75, 76],
+    'H': [81, 82, 83, 84, 85, 86],
+    'I': [91, 92, 93, 94, 95, 96],
+    'J': [101, 102, 103, 104, 105, 106],
+    'K': [111, 112, 113, 114, 115, 116],
+    'L': [121, 122, 123, 124, 125, 126],
+}
+
+trig2 = {
+    'img': {
+        'animals': 131,
+        'bodyparts': 132,
+        'characters': 133,
+        'colors': 134,
+        'landscapes': 135,
+        'shapes': 136,
+    },
+    'txt': {
+        'animals': 241,
+        'bodyparts': 242,
+        'characters': 243,
+        'colors': 244,
+        'landscapes': 245,
+        'shapes': 246,
+    },
+}
+
+trig3 = {
+    'left': 201,
+    'right': 202,
+    'confirm': 203,
+    'fb_correct': 204,
+    'fb_incorrect': 205, 
+    'timeout': 206,
+    'block_pause': 207,
+    'block_endpause': 208,
+    'run_pause': 209,
+    'run_endpause': 210,
+    'reward_info': 211,
+}
+
 triggers = {
-    'animals':{
-        'img':{
-            'seq':1,
-            'quest':11},
-        'txt':{
-            'seq':101,
-            'quest':111}
-    }, 
-    'bodyparts':{
-        'img':{
-            'seq':2,
-            'quest':12},
-        'txt':{
-            'seq':102,
-            'quest':112}
-    },
-    'characters':{
-        'img':{
-            'seq':3,
-            'quest':13},
-        'txt':{
-            'seq':103,
-            'quest':113}
-    },
-    'colors':{
-        'img':{
-            'seq':4,
-            'quest':14},
-        'txt':{
-            'seq':104,
-            'quest':114}
-    },
-    'landscapes':{
-        'img':{
-            'seq':5,
-            'quest':15},
-        'txt':{
-            'seq':105,
-            'quest':115}
-    },
-    'shapes':{
-        'img':{
-            'seq':6,
-            'quest':16},
-        'txt':{
-            'seq':106,
-            'quest':116}
-    },
-    'slot2':202,
-    'slot3':203,
-    'slot4':204,
-    'slot5':205,
-    'slot6':206,
-    'time_out':200,
+    'seq_pos': trig1,
+    'mod_cat':trig2,
+    'misc': trig3,
 }

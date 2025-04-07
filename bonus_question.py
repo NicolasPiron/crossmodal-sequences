@@ -8,6 +8,8 @@ import sequences.stimuli_manager as sm
 import sequences.instr as it
 from sequences.common import get_win_dict
 
+# TODO: remove the mouse behavior and replace with button presses
+
 def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win_dict, lang):
     '''Ask the participant to place the images in the correct order and save the data.
     
@@ -50,9 +52,13 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win
     img_files = [img for img in img_files if Path(img).stem.split('_')[0] in amodal_items]
     random.shuffle(img_files)
     start_item_path = glob.glob(str(pm.input_dir) + f"/stims/{lang}/*/{start_item}_img.png")[0]
-    print(start_item_path)
+    
+    start_item_index = img_files.index(start_item_path) # needed to fill the removed item's position with the dummy image
     img_files.remove(start_item_path)
-    positions = bq.gen_img_positions()
+    dummy_path = None
+    img_files.insert(start_item_index, dummy_path)
+
+    positions = bq.gen_img_positions(jitter=0.05)
 
     start_item_img = visual.ImageStim(
         win,
@@ -64,6 +70,19 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win
     # define dictionaries for images and slots. This will allow us to keep track of what happens to them.
     images = []
     for i, img_path in enumerate(img_files):
+        # this dummy image is used to fill the blank left by the cue
+        if img_path is None: 
+            # create an invisible placeholder
+            img_stim = visual.ImageStim(win, image=None, opacity=0, pos=positions[i])
+            images.append({
+                "stim": img_stim,
+                "highlight": visual.Rect(win, opacity=0),  # never shown
+                "orig_pos": positions[i],
+                "selected": False,
+                "placed": True,  # prevent interaction
+                "current_slot": None,
+            })
+            continue
         img_stim = visual.ImageStim(
             win,
             image=img_path,
@@ -107,7 +126,8 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win
         for pos in slot_positions
     ]
 
-    mouse = event.Mouse(win=win)
+    grid_index = 0
+    grid_cols = 6  # 6 columns as in gen_img_positions
     selected_image = None  # Track the currently selected image
     running = True
 
@@ -116,27 +136,38 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win
         instr2.draw()
         start_item_img.draw()
 
-        # Draw images and highlights
+        for i, img in enumerate(images):
+            img["highlight"].opacity = 1 if i == grid_index and not img["placed"] else 0
+
+        # Draw slots (only the empty ones)
+        for slot in slots:
+            if not slot["occupied"]:
+                slot["rect"].draw()
+
+        # Draw all images (whether placed or not)
         for img in images:
             img["stim"].draw()
             img["highlight"].draw()
-        for slot in slots:
-            slot["rect"].draw()
 
         # Update the window
         win.flip()
 
-        if mouse.getPressed()[0]:
-            bq.undo_image_placement(images, mouse)
-            selected_image = bq.toggle_image_selection(images, mouse, selected_image)
-            bq.place_image_in_slot(slots, mouse, selected_image)
-
+        keys = event.getKeys()
+        for key in keys:
+            if key in ["up", "down", "left", "right"]:
+                grid_index = bq.move_cursor(grid_index, key, len(images), grid_cols, images)
+            elif key == "space":
+                selected_image = bq.handle_select_or_place(images, grid_index, selected_image, slots)
+            elif key in ["backspace", "delete"]:
+                bq.handle_undo(images)
         occ_count = bq.count_occupied_slots(slots)
         txt_instr3 = it.get_txt(lang, 'instr_bonus3_fn')
         running = bq.check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path, txt_instr3)
 
         if "escape" in event.getKeys():
             running = False
+        
+        core.wait(0.01) 
     
     return win_dict
 

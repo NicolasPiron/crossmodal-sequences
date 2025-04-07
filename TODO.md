@@ -2,7 +2,6 @@
 
 - breaks post run
 - reward system
-- possibility to start from anywhere
 - add 12 sounds, pure tones. 
 
 # to complete/modify :

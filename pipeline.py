@@ -139,7 +139,8 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
             question_mod_org=question_mod_org
         )
     
-    post_block_break(tools)
+    if tools['tracker']['block_id'] < 4: # break for the first 3 blocks, then another longer break is proposed
+        post_block_break(tools)
     logger = tools['logger']
     logger.info(f'Block {tools["tracker"]["block_id"]} completed successfully.')
     logger.info('========== End of block ==========')
@@ -216,21 +217,29 @@ def post_block_break(tools):
     ''' Function to present a break between blocks. Returns nothing. '''
     win = tools['win']
     background = tools['background']
-    if tools['exp_info']['lang'] == 'fr':
-        txt = "Pause."
-    else:
-        txt = "Break."
-    text_stim = visual.TextStim(
-        win=win,
-        text=txt,
-        color='black', 
+    logger = tools['logger']
+    pport = tools['pport']
+    block_id = tools['tracker']['block_id']
+
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
+    instructions = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0.55),
         height=pm.text_height,
+        color='black',
         units='norm'
-    )
+    ) 
+
+    # log and triggers before and after break
+    logger.info(f'block {block_id} break start')
     background.draw()
-    text_stim.draw()
+    instructions.draw()
+    win.callOnFlip(pport.signal, pm.triggers['misc']['block_pause'])
     win.flip()
     core.wait(pm.t_post_block)
+    pport.signal(pm.triggers['misc']['block_endpause'])
+    logger.info(f'block {block_id} break stop')
 
 def initialize_run(debugging):
     ''' Initializes a run. Creates the output dir, set or get the seed to control randomization and 
@@ -472,8 +481,15 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     stims = sm.get_stims(pm.input_dir, sequence, modality, lang=exp_info['lang'])
     cat1 = sm.get_cat_from_stim(stims[idx1])
     cat2 = sm.get_cat_from_stim(stims[idx2])
-    triggers = [pm.triggers[cat1][modality]['quest'],
-                pm.triggers[cat2][modality]['quest']]
+
+    triggers1 = [
+        pm.triggers['seq_pos'][seq_name][idx1],
+        pm.triggers['seq_pos'][seq_name][idx2]
+    ]
+    triggers2 = [
+        pm.triggers['mod_cat'][modality][cat1],
+        pm.triggers['mod_cat'][modality][cat2]
+    ]
 
     logger.info(f'first item on screen: {first_for_question}')
     logger.info(f"first item's index: {idx1}")
@@ -544,13 +560,15 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     background.draw()
     cue_viz.draw()
-    win.callOnFlip(tools['pport'].signal, triggers[0])
+    win.callOnFlip(tools['pport'].signal, triggers1[0])
+    win.callOnFlip(tools['pport'].signal, triggers2[0])
     win.flip()
     sm.fade_out(tools, cue_viz, clock=fade_clock, f_dur=t_viz_cue)
 
     background.draw()
     target_viz.draw()
-    win.callOnFlip(tools['pport'].signal, triggers[1])
+    win.callOnFlip(tools['pport'].signal, triggers1[1])
+    win.callOnFlip(tools['pport'].signal, triggers2[1])
     win.flip()
     core.wait(t_viz_target)
 
@@ -563,11 +581,13 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         global_clock=core.Clock(),
         t_act=t_act,
         key_dict=pm.key_dict,
+        trig_dict=pm.triggers
     )
 
     distance = sm.get_response_distance(resp_idx, idx2, rt)
     feedback_txt, font_color, correct, n_points = sm.get_feedback_args(distance, lang=exp_info['lang'])
     tracker['points_attributed'] += n_points
+    fb_trig = 'fb_correct' if correct else 'fb_incorrect'
 
     fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
 
@@ -580,11 +600,12 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         units='norm',
         bold=True
     )
-    
+     
     reward_sound = sm.get_reward_sound(tools['q_reward_sounds'], n_points)
                         
     background.draw()
     feedback.draw()
+    win.callOnFlip(tools['pport'].signal, pm.triggers['misc'][fb_trig])
     win.flip()
     if reward_sound:
         reward_sound.play()
@@ -745,19 +766,19 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
         logger.info(f'sequence number: {k}')
         logger.info(f'sequence name: {sequence_name}')
         logger.info(f'sequence modality: {modality}')
-        present_stimuli(tools, sequence, stims, modality)
+        present_stimuli(tools, sequence, sequence_name, stims, modality)
     return None
 
-def present_stimuli(tools, sequence, stims, modality):
+def present_stimuli(tools, sequence, sequence_name, stims, modality):
     ''' Present the 6 stimuli of a sequence. Returns nothing. '''
     debugging = tools['debugging']
     for i, stim in enumerate(stims):
         if debugging:
             continue
-        present_stimulus(tools, sequence, i, stim, modality)
+        present_stimulus(tools, sequence, sequence_name, i, stim, modality)
     return None
 
-def present_stimulus(tools, sequence, i, stim, modality): # TODO: add sound
+def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO: add sound
     ''' Present a single stimulus. Returns nothing. '''
     
     debugging = tools['debugging']
@@ -773,7 +794,8 @@ def present_stimulus(tools, sequence, i, stim, modality): # TODO: add sound
         t_isi = 0.01
 
     stim_cat = sm.get_cat_from_stim(stim)
-    trig = pm.triggers[stim_cat][modality]['seq'] # keys are 'img'/'txt' and 'seq'/'quest'
+    trig1 = pm.triggers['seq_pos'][sequence_name][i] # key is seq name (e.g., 'A') and then index of the item to find trigger in the list
+    trig2 = pm.triggers['mod_cat'][modality][stim_cat] # keys are 'img'/'txt' and category names (e.g., 'animals')
                         
     fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
     stim_image = visual.ImageStim(win=win,
@@ -789,7 +811,8 @@ def present_stimulus(tools, sequence, i, stim, modality): # TODO: add sound
     logger.info(f'stimulus category: {stim_cat}')
     logger.info(f'stimulus path: {stim}')
 
-    win.callOnFlip(pport.signal, trig)
+    win.callOnFlip(pport.signal, trig1)
+    win.callOnFlip(pport.signal, trig2)
     win.flip()
     #sound.play()
     core.wait(t_stim)
@@ -808,6 +831,37 @@ def present_stimulus(tools, sequence, i, stim, modality): # TODO: add sound
     core.wait(t_isi)
     return None
 
+def post_run_break(tools, pause_i):
+    ''' Break post run. Returns nothing. '''
+    pport = tools['pport']
+    logger = tools['logger']
+    win = tools['win']
+    background = tools['background']
+
+    # intructions
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
+    instructions = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0.55),
+        height=pm.text_height,
+        color='black',
+        units='norm'
+    ) 
+
+    # log and triggers before and after break
+    logger.info(f'post run break {pause_i} start')
+    background.draw()
+    instructions.draw()
+    win.callOnFlip(pport.signal, pm.triggers['misc']['run_pause'])
+    win.flip()
+    core.wait(pm.t_post_run) # 90s
+    pport.signal(pm.triggers['misc']['run_endpause'])
+    logger.info(f'post run break {pause_i} end')
+
+def present_rewarded_sequences(tools):
+    return None
+
 #########################
 # highest level functions
 
@@ -819,9 +873,9 @@ def clear_stuff(win):
 def pipeline(debugging=False):
     tools = execute_run(debugging=debugging)
     clear_stuff(tools['win'])
-    # TODO: add 1.5 min break
-    # TODO: add info about which sequences are rewarded
-    # TODO: add 1.5 min break
+    post_run_break(tools, pause_i=1)
+    present_rewarded_sequences(tools)
+    post_run_break(tools, pause_i=2)
 
     ask_all_seq( # TODO: modify this func so it allows to reward participants
         subject_id=tools['exp_info']['ID'], 

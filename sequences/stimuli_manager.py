@@ -351,7 +351,7 @@ def get_reward_sound(reward_sounds, n_points:int):
     else:
         raise ValueError(f"Invalid number of points: {n_points}")
 
-def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_clock, t_act:float, key_dict:dict)-> Tuple[int, float]:
+def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_clock, t_act:float, key_dict:dict, trig_dict:dict)-> Tuple[int, float]:
     '''Run a question where the participant has to place the second item in the correct position.
     NB : it adds 1 to the returned index to takes into account the first item of the sequence (which is not
     selectable)'''
@@ -409,18 +409,18 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
             if left_key in keys:
                 current_index = move_highlight(slots, current_index=current_index, direction="left")
                 if not demo:
-                    trig_fun(current_index+101) # WARNING what is this?
+                    trig_fun(trig_dict['misc']['left'])
                     tools['logger'].info(f"Left key pressed, current index: {current_index+1}")
 
             if right_key in keys:
                 current_index = move_highlight(slots, current_index=current_index, direction="right")
                 if not demo:
-                    # should there be a trigger here?
+                    trig_fun(trig_dict['misc']['right'])
                     tools['logger'].info(f"Right key pressed, current index: {current_index+1}")
 
             if confirm_key in keys:
                 if not demo:
-                    trig_fun(current_index+101) # trigger is the slot index + 101 TODO: change this to something adaptive
+                    trig_fun(trig_dict['misc']['confirm'])
                 resp_time = rt_clock.getTime()
                 global_clock.reset() # reset the global clock to avoid time out
                 reset_highlight(slots)
@@ -439,7 +439,7 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
 
             if global_clock.getTime() > t_act:
                 if not demo:
-                    trig_fun(200) 
+                    trig_fun(trig_dict['misc']['timeout']) 
                     tools['logger'].info('Time out')
                     tools['logger'].info(f'clock time: {global_clock.getTime()}')
                 running = False
