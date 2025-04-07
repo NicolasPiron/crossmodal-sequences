@@ -118,7 +118,6 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
         n_skip = 0
 
     for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
-        print(j)
         tools['tracker']['trial_id'] = j
         trial_seq_org, trial_mod_org = initialize_trial_sequences(
             tools=tools,
@@ -801,7 +800,17 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
         image=stim,
         size=(pm.img_size, pm.img_size*aspect_ratio)
     )
-                                                    
+
+    # act a rectangle for photodiode
+    rect = visual.Rect(
+        win=win,
+        width=0.3,
+        height=0.3,
+        pos=(0.8, 0.8),
+
+    )
+
+    rect.draw()
     background.draw()
     stim_image.draw()
     # log info there to be closer to the actual presentation
