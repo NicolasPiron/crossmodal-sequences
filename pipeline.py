@@ -456,6 +456,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     background = tools['background']
     logger = tools['logger']
     exp_info = tools['exp_info']
+    pport = tools['pport']
 
     logger.info(f'question number: {tracker["question_id"]}')
     logger.info(f'sequence name: {seq_name}')
@@ -560,15 +561,13 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     background.draw()
     cue_viz.draw()
-    win.callOnFlip(tools['pport'].signal, triggers1[0])
-    win.callOnFlip(tools['pport'].signal, triggers2[0])
+    win.callOnFlip(novov_trigger,pport=pport, trig1=triggers1[0], trig2=triggers2[0], delay=pport.delay)
     win.flip()
     sm.fade_out(tools, cue_viz, clock=fade_clock, f_dur=t_viz_cue)
 
     background.draw()
     target_viz.draw()
-    win.callOnFlip(tools['pport'].signal, triggers1[1])
-    win.callOnFlip(tools['pport'].signal, triggers2[1])
+    win.callOnFlip(novov_trigger,pport=pport, trig1=triggers1[1], trig2=triggers2[1], delay=pport.delay)
     win.flip()
     core.wait(t_viz_target)
 
@@ -811,8 +810,7 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
     logger.info(f'stimulus category: {stim_cat}')
     logger.info(f'stimulus path: {stim}')
 
-    win.callOnFlip(pport.signal, trig1)
-    win.callOnFlip(pport.signal, trig2)
+    win.callOnFlip(novov_trigger,pport=pport, trig1=trig1, trig2=trig2, delay=pport.delay)
     win.flip()
     #sound.play()
     core.wait(t_stim)
@@ -833,6 +831,7 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
 
 def post_run_break(tools, pause_i):
     ''' Break post run. Returns nothing. '''
+
     pport = tools['pport']
     logger = tools['logger']
     win = tools['win']
@@ -861,6 +860,12 @@ def post_run_break(tools, pause_i):
 
 def present_rewarded_sequences(tools):
     return None
+
+def novov_trigger(pport, trig1, trig2, delay=10):
+    pport.signal(trig1)
+    core.wait((delay+2)/1000)
+    pport.signal(trig2)
+    return
 
 #########################
 # highest level functions

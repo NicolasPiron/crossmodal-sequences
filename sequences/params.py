@@ -47,9 +47,9 @@ if os_name == "Windows":
     use_mock_port = False
     pport = 0x2FB8
 elif os_name == "Linux":
-    screen = 1
+    screen = 0
     use_mock_port = False
-    pport = ''
+    pport = 'dev/parport0'
 elif os_name == "Darwin":
     screen = 0
     use_mock_port = True
