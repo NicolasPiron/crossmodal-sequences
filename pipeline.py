@@ -807,7 +807,6 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
         width=0.3,
         height=0.3,
         pos=(0.8, 0.8),
-
     )
 
     rect.draw()

@@ -6,7 +6,7 @@ os_name = platform.system()
 # paths
 input_dir = Path("data/input")
 output_dir = Path("data/output")
-bg_fn = Path(f"{input_dir}/background/background2.jpg")
+bg_fn = Path(f"{input_dir}/background/background.jpg")
 stim_bg_fn = Path(f"{input_dir}/background/stim_bg.png")
 sound0_fn = Path(f'{input_dir}/sounds/reward.mp3')
 fix_img_fn = Path(f"{input_dir}/fix/fix.png")
