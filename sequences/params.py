@@ -49,7 +49,7 @@ if os_name == "Windows":
 elif os_name == "Linux":
     screen = 0
     use_mock_port = False
-    pport = 'dev/parport0'
+    pport = '/dev/parport0'
 elif os_name == "Darwin":
     screen = 0
     use_mock_port = True
