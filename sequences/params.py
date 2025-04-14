@@ -6,7 +6,7 @@ os_name = platform.system()
 # paths
 input_dir = Path("data/input")
 output_dir = Path("data/output")
-bg_fn = Path(f"{input_dir}/background/background.jpg")
+bg_fn = Path(f"{input_dir}/background/background2.jpg")
 stim_bg_fn = Path(f"{input_dir}/background/stim_bg.png")
 sound0_fn = Path(f'{input_dir}/sounds/reward.mp3')
 fix_img_fn = Path(f"{input_dir}/fix/fix.png")
@@ -22,6 +22,7 @@ instr_fnames = {
     'instr_stimpres2_fn' : 'instr_stim_pres2.txt',
     'instr_stimpres3_fn' : 'instr_stim_pres3.txt',
     'instr_pause_fn': 'instr_pause.txt', 
+    'instr_reward_fn': 'instr_reward.txt',
 }
 key_dict = {
     'left_key' : '1',
@@ -39,7 +40,7 @@ img_size = 0.4
 img_bg_size = 0.41
 win_size = [1512, 982]
 isi_dur = 1.5
-stim_dur = 0.5
+stim_dur = 0.3 # 0.55s in the data. 
 jitter = 0.2 # TODO: change to shorter value
 prefs.hardware['audioLib'] = ['PTB']
 if os_name == "Windows":
@@ -96,6 +97,7 @@ seq_structures = {
 }
 
 # params for the in-task questions
+# TODO: maybe use frame rate to calculate the time
 t_prep = 2
 t_viz_cue = 5
 t_viz_target = 3
@@ -104,12 +106,20 @@ t_fb = 1
 t_iqi = 0.5
 t_post_q = 3
 t_post_block = 30 # To adjust after discussion
-t_post_run = 90
+t_post_run = 1
 q_img_size = 0.2
 q_slot_size = q_img_size + 0.001
 hl_size = q_slot_size + 0.001
 y_pos = 0.25
 max_points = 9
+
+# for rewarded sequence presentation
+rw_img_size = 0.2
+rw_hl_size = rw_img_size + 0.025
+# rw_hl_color = (212, 175, 55) # gold
+rw_hl_color = '#D4AF37'
+flick_freq = 1 # Hz
+t_reward_info = 15
 
 # params for additional_q.py
 bq_img_size = 0.1

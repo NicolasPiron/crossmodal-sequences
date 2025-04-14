@@ -1,12 +1,37 @@
 import os
+from pathlib import Path
+import pandas as pd
 import numpy as np
 from psychopy import visual, event
 from sequences import stimuli_manager as sm
+from sequences import params as pm
+
+# functions for the reward computation and feedback
+
+def get_all_answers(s_id, r_id, seq_names):
+    ''' Read the answers from the sequence files and return a dictionary with the answers '''
+    df = pd.DataFrame()
+    for seq_name in seq_names:
+        d = read_seq_file(s_id, r_id, seq_name)
+        # add the sequence name as a column
+        d["sequence"] = seq_name
+        d["subject_id"] = s_id
+        d["run_id"] = r_id
+        # add to the dataframe
+        df = pd.concat([df, d], ignore_index=True)
+    return df
+
+def read_seq_file(s_id, r_id, seq_name):
+    ''' Read the sequence file and return a dictionary with the sequences '''
+    fn = Path(f'{pm.output_dir}/sub-{s_id}/sub-{s_id}_run{r_id}_bonus_{seq_name}.csv')
+    return pd.read_csv(fn)
+
+# functions for the interactive slot filling task
 
 def check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path, txt):
     if occ_count == 5:
         resp = confirm_slot_filling(start_item_img, images, win, background, txt)
-        if resp[0] == "space":
+        if resp[0] == "space": # TODO: change this key. Should be defined in bonus_question.py and given as an argument here
             running = save_slot_data(start_item_img, slots, out_path)
         elif resp[0] == "escape":
             reset_image_positions(images, slots)
@@ -51,9 +76,7 @@ def save_slot_data(start_item_img, slots, out_path):
         f.write(f"0,{first_img},{first_img_cat}\n")
         for i, slot in enumerate(slots):
             stim_path = slot["image"]["stim"].image
-            stim_name = os.path.basename(
-                            stim_path.split(".")[0].split("_")[0]
-                        )
+            stim_name = os.path.basename(stim_path.split(".")[0].split("_")[0])
             stim_cat = sm.get_cat_from_stim(stim_path)
             f.write(f"{i+1},{stim_name},{stim_cat}\n")
     return running
@@ -71,7 +94,7 @@ def move_cursor(index: int, direction: str, total: int, cols: int, images) -> in
     row = index % rows
 
     # Movement logic
-    if direction == "up" and row > 0:
+    if direction == "up" and row > 0: # TODO: change this for the response pad. 
         row -= 1
     elif direction == "down" and row < rows - 1:
         row += 1

@@ -7,6 +7,26 @@ from collections import Counter, defaultdict
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
+def get_reward_info(two_run_org:Dict[str, Dict[str, List[str]]], n:int=3)-> Dict[str, List[str]]:
+    ''' For the whole experiment (2 runs), splits sequence names into rewarded and non rewarded. 
+    The function needs a dict that looks like this: 
+    {'run1': {'block1': ['L', 'E', 'G'], 'block2':[...], ...}, 'run2': {...}}. 
+    All the sequences names are in the blocks 1 and 2 of each run (in the two last blocks, they are repeated).
+    The function uses set() to remove duplicates in the list of sequences.
+    '''
+    
+    reward_info = {}
+    for run, blocks in two_run_org.items(): # for key, small dict in bigger dict
+        reward_info[run] = {}
+        all_seq = [] # use a list to be able to use += below
+        for block in blocks.values():
+            all_seq += block
+        all_seq = list(set(all_seq)) # remove duplicates
+        reward_info[run]['reward'] = random.sample(all_seq, 3)
+        reward_info[run]['no_reward'] = [seq for seq in all_seq if seq not in reward_info[run]['reward']]
+
+    return reward_info
+
 def distribute_tones(tone_names:List[str], seq_names:List[str])-> Dict[str, str]:
     ''' Attribute a tone to each sequence. This is done randomly for each participant.'''
     random.shuffle(tone_names)
@@ -159,7 +179,7 @@ def generate_run_org(sequences:Dict[str, List], seed) -> Dict[str, Dict[str, Lis
                 two_rep_pairs = True
         return blocks
     
-    random.seed(seed) # has to set again because the function is called multiple times
+    random.seed(seed) # has to set again because the function is called multiple times and we want the same result within participant
     seq_names = list(sequences.keys())
     seq_separated = distribute_sequences_run(seq_names, 2)
     run_org = {
@@ -239,10 +259,11 @@ def generate_orders_trial(sequence_names: list, n_trials: int) -> List[Tuple[str
 
     return unique_pos_seq
 
-def generate_sequences(input_dir:str, seq_structures:Dict, lang:str)-> Dict[str, List[str]]:
+def generate_sequences(input_dir:str, seq_structures:Dict, lang:str, seed:int)-> Dict[str, List[str]]:
     ''' Generate 6 unique amodal sequences. They are based on the fixed strucutres in seq_structures.
     The sequences are returned in a dict {'A':[item1, 'item2', ...], ...}
     '''
+    random.seed(seed) # has to set again because the function is called multiple times and we want the same result within participant
     all_cat = sorted(os.listdir(os.path.join(input_dir, 'stims', lang)))
     all_cat = [cat for cat in all_cat if not cat.startswith('.')] # remove .DS_store
     all_stims = {}
@@ -342,7 +363,7 @@ def get_trial_feedback(n_points:int, max_points:int, lang:str)-> str:
 
     return messages[lang][-1][1] # if issue, return the last message
 
-def get_reward_sound(reward_sounds, n_points:int):
+def get_fb_sound(reward_sounds, n_points:int):
     ''' Return the reward sound (psychopy.sound) based on the number of points obtained for this question.'''
     if n_points < 3:
         return None

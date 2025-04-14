@@ -8,8 +8,6 @@ import sequences.stimuli_manager as sm
 import sequences.instr as it
 from sequences.common import get_win_dict
 
-# TODO: remove the mouse behavior and replace with button presses
-
 def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win_dict, lang):
     '''Ask the participant to place the images in the correct order and save the data.
     
@@ -162,10 +160,11 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win
                 bq.handle_undo(images)
         occ_count = bq.count_occupied_slots(slots)
         txt_instr3 = it.get_txt(lang, 'instr_bonus3_fn')
+        # check if the participant has placed all images and if so, save the data
         running = bq.check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path, txt_instr3)
 
-        if "escape" in event.getKeys():
-            running = False
+        # if "escape" in event.getKeys():
+        #     running = False
         
         core.wait(0.01) 
     
@@ -201,7 +200,7 @@ def ask_all_seq(subject_id, run_id, lang, win_dict=None):
 
     seed = sm.set_seed(subject_id)
 
-    all_amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang)
+    all_amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang, seed=seed)
     two_run_org = sm.generate_run_org(all_amodal_sequences, seed=seed)
     amodal_sequences = extract_sequences(two_run_org, run_id, all_amodal_sequences)
     amodal_sequences = shuffle_dict(amodal_sequences)
@@ -237,7 +236,7 @@ def ask_all_seq(subject_id, run_id, lang, win_dict=None):
         
     win.close()
     print("All sequences completed")
-    return None
+    return
 
 def extract_sequences(two_run_org, run_id, all_amodal_sequences):
     ''' Helper func to extract the sequences that are in the run.
@@ -264,6 +263,27 @@ def extract_sequences(two_run_org, run_id, all_amodal_sequences):
     run_seq_names = set(run_seq_names)
     amodal_sequences = {k: v for k, v in all_amodal_sequences.items() if k in run_seq_names}
     return amodal_sequences
+
+def give_reward_feedback(subject_id, run_id, win_dict, lang):
+    ''' Give feedback to the participant about the reward they received '''
+
+    # get the actual sequences that were used in the run
+    seed = sm.set_seed(subject_id)
+    all_amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang, seed=seed)
+    two_run_org = sm.generate_run_org(all_amodal_sequences, seed=seed)
+    amodal_sequences = extract_sequences(two_run_org, run_id, all_amodal_sequences)
+    seq_names = list(amodal_sequences.keys())
+    
+    answers = bq.get_all_answers(subject_id, run_id, seq_names)
+    # save the concatenated answers to a file
+    out_path = Path(f'{pm.output_dir}/sub-{subject_id}/sub-{subject_id}_run{run_id}_bonus.csv')
+    answers.to_csv(out_path, index=False)
+
+    # NEXT : get for each sequence the correct answer and the participant's answer as two lists.
+    # write a function that takes the two lists and computes the reward in bonus_q.py
+    # save the rewaded amount in a file, and show the feedback to the participant
+
+    return
 
 if __name__ == "__main__":
     subject_id = input('Enter subject ID: ')

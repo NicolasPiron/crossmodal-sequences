@@ -1,6 +1,9 @@
 import os
 import logging
 import glob
+import time
+import random
+import math
 from datetime import datetime
 from psychopy.gui import DlgFromDict
 from psychopy import visual, core, event, sound
@@ -42,10 +45,18 @@ def execute_run(debugging=False):
     for block_id in run_org.keys():
         full_block_org[block_id] = sm.distribute_sequences_trial(sequence_names=run_org[block_id], n_trials=pm.n_trials)
 
+    # get the rewarded sequences
+    n_seq_rd = pm.n_seq / 2
+    all_reward_info = sm.get_reward_info(two_run_org, n=n_seq_rd)
+    reward_info = all_reward_info[f'run{int(exp_info["run"])}']
+    tools['reward_info'] = reward_info
+
     logger.info(f'=============== Start of run {exp_info["run"]} ===============')
     logger.info(f'expe org: {two_run_org}')
     logger.info(f'run org: {run_org}')
     logger.info(f'full block org: {full_block_org}')
+    logger.info(f'all reward info: {all_reward_info}')
+    logger.info(f'run reward info: {reward_info}')
     logger.info(f'question mod org: {question_mod_org}')
     logger.info(f'first seq mod org: {first_seq_mod_org}')
     present_instructions(tools) # Present instructions 
@@ -248,9 +259,9 @@ def initialize_run(debugging):
     exp_info = {
         'ID': '00',
         'run': '01',
-        'block': '01',
-        'trial': '01',
-        'seq': '01',
+        'block': '04',
+        'trial': '03',
+        'seq': '06',
         'lang': 'fr'
     }
 
@@ -414,7 +425,7 @@ def setup_sequence_distribution(tools):
     '''
     sm.check_nstims(pm.categories, pm.input_dir, tools['exp_info']['lang'])
     sm.check_img_txt(pm.input_dir, tools['exp_info']['lang'])
-    amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang=tools['exp_info']['lang'])
+    amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang=tools['exp_info']['lang'], seed=tools['seed'])
     # define modality of questions in each trial
     question_mod_org = sm.distribute_mod_quest(n_blocks=pm.n_blocks, n_trials=pm.n_trials)
     first_seq_mod_org = sm.distribute_mod_seq(n_block=pm.n_blocks)
@@ -552,21 +563,21 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     t_viz_target = pm.t_viz_target
     t_act = pm.t_act
     t_fb = pm.t_fb
-    # if tools['debugging']:
-    #     t_viz_cue = 0.1
-    #     t_viz_target = 0.1
-    #     t_act = 0.1
-    #     t_fb = 0.1
+    if tools['debugging']:
+        t_viz_cue = 0.01
+        t_viz_target = 0.01
+        t_act = 0.01
+        t_fb = 0.01
 
     background.draw()
     cue_viz.draw()
-    win.callOnFlip(novov_trigger,pport=pport, trig1=triggers1[0], trig2=triggers2[0], delay=pport.delay)
+    win.callOnFlip(novov_trigger,pport=pport, trig1=triggers1[0], trig2=triggers2[0], delay=10)
     win.flip()
     sm.fade_out(tools, cue_viz, clock=fade_clock, f_dur=t_viz_cue)
 
     background.draw()
     target_viz.draw()
-    win.callOnFlip(novov_trigger,pport=pport, trig1=triggers1[1], trig2=triggers2[1], delay=pport.delay)
+    win.callOnFlip(novov_trigger,pport=pport, trig1=triggers1[1], trig2=triggers2[1], delay=10)
     win.flip()
     core.wait(t_viz_target)
 
@@ -599,7 +610,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         bold=True
     )
      
-    reward_sound = sm.get_reward_sound(tools['q_reward_sounds'], n_points)
+    reward_sound = sm.get_fb_sound(tools['q_reward_sounds'], n_points)
                         
     background.draw()
     feedback.draw()
@@ -698,7 +709,7 @@ def initialize_block(tools, run_org):
     block_info.draw()
     win.flip()
     event.waitKeys(keyList=['space'])
-    return None
+    return
 
 def provide_trial_feedback(tools, tracker):
     ''' Provide feedback at the end of a trial. Returns nothing. '''
@@ -740,7 +751,7 @@ def provide_trial_feedback(tools, tracker):
     text_stim.draw()
     tools['win'].flip()
     core.wait(t_post_q)
-    return None
+    return
 
 def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
     ''' Present the 6 sequences of a trial before the questions. Returns nothing. 
@@ -765,7 +776,7 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
         logger.info(f'sequence name: {sequence_name}')
         logger.info(f'sequence modality: {modality}')
         present_stimuli(tools, sequence, sequence_name, stims, modality)
-    return None
+    return
 
 def present_stimuli(tools, sequence, sequence_name, stims, modality):
     ''' Present the 6 stimuli of a sequence. Returns nothing. '''
@@ -774,7 +785,8 @@ def present_stimuli(tools, sequence, sequence_name, stims, modality):
         if debugging:
             continue
         present_stimulus(tools, sequence, sequence_name, i, stim, modality)
-    return None
+
+    return
 
 def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO: add sound
     ''' Present a single stimulus. Returns nothing. '''
@@ -804,25 +816,12 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
     # act a rectangle for photodiode
     rect = visual.Rect(
         win=win,
-        width=0.3,
-        height=0.3,
-        pos=(0.8, 0.8),
+        width=0.05,
+        height=0.05*aspect_ratio,
+        pos=(0.92, 0.92),
+        fillColor=(255, 255, 255),
     )
-
-    rect.draw()
-    background.draw()
-    stim_image.draw()
-    # log info there to be closer to the actual presentation
-    logger.info(f'stimulus number: {i+1}')
-    logger.info(f'stimulus name: {str(sequence[i])}')
-    logger.info(f'stimulus category: {stim_cat}')
-    logger.info(f'stimulus path: {stim}')
-
-    win.callOnFlip(novov_trigger,pport=pport, trig1=trig1, trig2=trig2, delay=pport.delay)
-    win.flip()
-    #sound.play()
-    core.wait(t_stim)
-
+    
     # Display fixation cross
     fix_cross = visual.TextStim(win=win,
         text='+',
@@ -831,11 +830,27 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
         color='black',
         units='norm'
     )
+
+    background.draw()
+    rect.draw()
+    stim_image.draw()
+    # log info there to be closer to the actual presentation
+    logger.info(f'stimulus number: {i+1}')
+    logger.info(f'stimulus name: {str(sequence[i])}')
+    logger.info(f'stimulus category: {stim_cat}')
+    logger.info(f'stimulus path: {stim}')
+
+    win.callOnFlip(novov_trigger,pport=pport, trig1=trig1, trig2=trig2, delay=10)
+    win.flip()
+    #sound.play()
+    t1 = time.time()
+    core.wait(t_stim)
+    print(f"stimulus {i+1} presented in {time.time()-t1:.5f} seconds")
     background.draw()
     fix_cross.draw()
     win.flip()
     core.wait(t_isi)
-    return None
+    return
 
 def post_run_break(tools, pause_i):
     ''' Break post run. Returns nothing. '''
@@ -856,6 +871,7 @@ def post_run_break(tools, pause_i):
         units='norm'
     ) 
 
+    # TODO: display a moving object so the participant doesn't phase out
     # log and triggers before and after break
     logger.info(f'post run break {pause_i} start')
     background.draw()
@@ -863,13 +879,91 @@ def post_run_break(tools, pause_i):
     win.callOnFlip(pport.signal, pm.triggers['misc']['run_pause'])
     win.flip()
     core.wait(pm.t_post_run) # 90s
+    # TODO: add little sound to indicate the end of the break
     pport.signal(pm.triggers['misc']['run_endpause'])
     logger.info(f'post run break {pause_i} end')
 
-def present_rewarded_sequences(tools):
-    return None
+def present_rewarded_sequences(tools:dict):
+    ''' Tells the participant which sequences are rewarded for the last question.'''
+    
+    background = tools['background']
+    win = tools['win']
+    pport = tools['pport']
+    logger = tools['logger']
+    reward_seq = tools['reward_info']['reward']
+    no_reward_seq = tools['reward_info']['no_reward']
+    run_seq = reward_seq + no_reward_seq
+    random.shuffle(run_seq) # shuffle the order of the sequences so the reawrded ones are not always first
+    modality = 'img'
+    amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang=tools['exp_info']['lang'], seed=tools['seed'])
+
+    first_stim_paths = {} # get the paths of the first images to be presented as indicators of each sequence
+    for seq_name in run_seq:
+        sequence = amodal_sequences[seq_name]
+        first_stim = sm.get_stims(pm.input_dir, sequence, modality, lang=tools['exp_info']['lang'])[0] # only the first image
+        first_stim_paths[seq_name] = first_stim
+
+    # construct the grid to store the 6 images
+    xs = [-0.55, 0, 0.55]*2
+    y = .52
+    ys = [y]*3 + [-y]*3
+
+    # define the objects to be presented
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_reward_fn')
+    instructions = visual.TextStim(
+        win=win,
+        text=text,
+        pos=(0, 0.85),
+        height=pm.text_height,
+        color='black',
+        units='norm'
+    )
+    stim_dict = {}
+    for i, seq_name in enumerate(run_seq):
+        hl_color = pm.rw_hl_color if seq_name in reward_seq else None # invisible highlight if no reward
+        stim_dict[seq_name] = {}
+        stim_dict[seq_name]['image'] = visual.ImageStim(
+            win=win,
+            image=first_stim_paths[seq_name],
+            pos=(xs[i], ys[i]),
+            size=(pm.rw_img_size, pm.rw_img_size * tools['aspect_ratio']),
+        )
+        stim_dict[seq_name]['highlight'] = visual.Rect(
+            win=win,
+            width=pm.rw_hl_size,
+            height=pm.rw_hl_size * tools['aspect_ratio'],
+            pos=(xs[i], ys[i]),
+            fillColor=hl_color,
+        )
+
+    logger.info('Presenting rewarded sequences')
+    logger.info(f'rewarded sequences: {reward_seq}')
+
+    # start the flickering loop 
+    start_time = time.time()
+    t_stop = start_time + pm.t_reward_info
+    i_count = 0
+
+    while time.time() < t_stop:
+        elapsed_time = time.time() - start_time
+        flick_val = 0.5 * (1 + math.sin(2 * math.pi * pm.flick_freq * elapsed_time)) # smooth flicker 
+        background.draw()
+        instructions.draw()
+        for seq_name in stim_dict:
+            highlight = stim_dict[seq_name]['highlight']
+            highlight.opacity = flick_val
+            highlight.draw()
+            stim_dict[seq_name]['image'].draw()
+        if i_count == 0:
+            win.callOnFlip(pport.signal, pm.triggers['misc']['reward_info']) # send trigger at the beginning of the reward pres
+        win.flip()
+        i_count += 1
+
+    logger.info('Rewarded sequences presented successfully')
+    return 
 
 def novov_trigger(pport, trig1, trig2, delay=10):
+    ''' Function to send triggers to the parallel port with no overlap.'''
     pport.signal(trig1)
     core.wait((delay+2)/1000)
     pport.signal(trig2)
@@ -889,7 +983,6 @@ def pipeline(debugging=False):
     post_run_break(tools, pause_i=1)
     present_rewarded_sequences(tools)
     post_run_break(tools, pause_i=2)
-
     ask_all_seq( # TODO: modify this func so it allows to reward participants
         subject_id=tools['exp_info']['ID'], 
         run_id=tools['exp_info']['run'], 
