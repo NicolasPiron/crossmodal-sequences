@@ -1,6 +1,16 @@
 from psychopy import visual, core, event
 import warnings
 
+def wait_frate(win, objects:list, frate:int, t:int):
+    ''' Function to wait for a certain number of frames '''
+    # Calculate the number of frames to wait
+    frames = int(frate * t)
+    # Wait for the specified number of frames
+    for _ in range(frames):
+        for obj in objects:
+            obj.draw()
+        win.flip()
+
 def log_exceptions(message, logger, win):
     ''' Function to log exceptions and close the window '''
     warnings.warn('ERROR : exception occured, see log file for details')

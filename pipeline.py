@@ -259,9 +259,9 @@ def initialize_run(debugging):
     exp_info = {
         'ID': '00',
         'run': '01',
-        'block': '04',
-        'trial': '03',
-        'seq': '06',
+        'block': '01',
+        'trial': '01',
+        'seq': '01',
         'lang': 'fr'
     }
 
@@ -323,6 +323,10 @@ def initialize_run(debugging):
     # tone_mapping = sm.get_pure_tone_dict() #TODO : add this to the params file
     win_dict = get_win_dict()
     win_dict['win'].mouseVisible = False
+    if platform.system() == 'Windows' or platform.system() == 'Linux':
+        frate = win_dict['win'].getActualFrameRate()
+    else:
+        frate = 120
 
     # define the tracker to keep track of where we are in the experiment
     tracker = { 
@@ -353,6 +357,7 @@ def initialize_run(debugging):
         'starting_point': starting_point,
         'tracker': tracker,
         # 'tone_mapping': tone_mapping,
+        'frate': frate,
     }
     
     return tools
@@ -797,6 +802,7 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
     win = tools['win']
     aspect_ratio = tools['aspect_ratio']
     background = tools['background']
+    frate = tools['frate']
     t_stim = pm.stim_dur # where should the jitter be added? Stim or ISI?
     t_isi = pm.isi_dur + sm.jitter_isi(pm.jitter)
     if debugging:
@@ -844,12 +850,14 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
     win.flip()
     #sound.play()
     t1 = time.time()
-    core.wait(t_stim)
+    # core.wait(t_stim)
+    fl.wait_frate(win, [background, rect, stim_image], frate=frate, t=t_stim) # wait for the frame rate to be reached
     print(f"stimulus {i+1} presented in {time.time()-t1:.5f} seconds")
-    background.draw()
-    fix_cross.draw()
-    win.flip()
-    core.wait(t_isi)
+    # background.draw()
+    # stim_image.draw()
+    # win.flip()
+    # core.wait(t_isi)
+    fl.wait_frate(win, [background, fix_cross], frate=frate, t=t_isi)
     return
 
 def post_run_break(tools, pause_i):

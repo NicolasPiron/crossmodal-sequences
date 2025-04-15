@@ -275,7 +275,8 @@ def give_reward_feedback(subject_id, run_id, win_dict, lang):
     seq_names = list(amodal_sequences.keys())
     
     answers = bq.get_all_answers(subject_id, run_id, seq_names)
-    # save the concatenated answers to a file
+    # save the concatenated answers to a file. 
+    # MAYBE put the real sequence in the df
     out_path = Path(f'{pm.output_dir}/sub-{subject_id}/sub-{subject_id}_run{run_id}_bonus.csv')
     answers.to_csv(out_path, index=False)
 

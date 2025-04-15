@@ -39,9 +39,6 @@ text_height = 0.08
 img_size = 0.4
 img_bg_size = 0.41
 win_size = [1512, 982]
-isi_dur = 1.5
-stim_dur = 0.3 # 0.55s in the data. 
-jitter = 0.2 # TODO: change to shorter value
 prefs.hardware['audioLib'] = ['PTB']
 if os_name == "Windows":
     screen = 1
@@ -96,6 +93,11 @@ seq_structures = {
     'L': [5, 0, 4, 3, 1, 2],
 }
 
+# sequence presentation timings
+isi_dur = 1.5
+stim_dur = 0.3 # 0.55s in the data? 
+jitter = 0 # 0.05 # TODO: change to shorter value
+
 # params for the in-task questions
 # TODO: maybe use frame rate to calculate the time
 t_prep = 2
@@ -124,6 +126,9 @@ t_reward_info = 15
 # params for additional_q.py
 bq_img_size = 0.1
 bq_hl_size = bq_img_size + 0.001
+
+# how much points rewarded (in cents)
+reward_value = 20
 
 # trigger mapping :
 # - trig1 : sequence + position -> between 11 and 126
