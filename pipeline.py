@@ -6,6 +6,7 @@ import random
 import math
 from datetime import datetime
 from psychopy.gui import DlgFromDict
+from psychopy.hardware.keyboard import Keyboard
 from psychopy import visual, core, event, sound
 import pandas as pd
 from sequences import stimuli_manager as sm
@@ -292,6 +293,15 @@ def initialize_run(debugging):
                 for f in files:
                     os.remove(f)
 
+    # had to add this because the waitKeys function was not working with the version of Ubuntu on the stim PC
+    if platform.system() == 'Linux':
+        keyboard = Keyboard()
+        keyboard.start()
+        adapt_waitKeys = keyboard.waitKeys
+    else:
+        keyboard = None
+        adapt_waitKeys = event.waitKeys
+
     bt.add_file_handler(
         logfn,
         mode='a', 
@@ -358,6 +368,8 @@ def initialize_run(debugging):
         'tracker': tracker,
         # 'tone_mapping': tone_mapping,
         'frate': frate,
+        'keyboard': keyboard,
+        'adapt_waitKeys': adapt_waitKeys,
     }
     
     return tools
@@ -368,13 +380,14 @@ def present_instructions(tools):
     exp_info = tools['exp_info']
     win = tools['win']
     background = tools['background']
+    adapt_waitKeys = tools['adapt_waitKeys']
 
     def present(instr):
         background.draw()
         instr.draw()
         win.flip()
         fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
-        event.waitKeys(keyList=['space'])
+        adapt_waitKeys(keyList=['space'])
 
     if exp_info['lang'] == 'fr':
         txt = "Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer."
@@ -388,7 +401,7 @@ def present_instructions(tools):
             background=background,
             t=pm.t
         )
-        event.waitKeys(keyList=['space'])
+        adapt_waitKeys(keyList=['space'])
 
     instr1 = it.get_txt(exp_info['lang'], 'instr1_fn')
     instr2 = it.get_txt(exp_info['lang'], 'instr2_fn')
@@ -692,6 +705,7 @@ def initialize_block(tools, run_org):
     logger = tools['logger']
     win = tools['win']
     background = tools['background']
+    adapt_waitKeys = tools['adapt_waitKeys']
     tracker = tools['tracker'] # the tracker is extracted here but not modified (so no need to return it)
     chosen_sequences = run_org[f'block{tracker["block_id"]}']
     logger.info(f'block: {tracker["block_id"]}')
@@ -713,7 +727,7 @@ def initialize_block(tools, run_org):
     background.draw()
     block_info.draw()
     win.flip()
-    event.waitKeys(keyList=['space'])
+    adapt_waitKeys(keyList=['space'])
     return
 
 def provide_trial_feedback(tools, tracker):
@@ -913,7 +927,7 @@ def present_rewarded_sequences(tools:dict):
 
     # construct the grid to store the 6 images
     xs = [-0.55, 0, 0.55]*2
-    y = .52
+    y = .45
     ys = [y]*3 + [-y]*3
 
     # define the objects to be presented
@@ -946,6 +960,14 @@ def present_rewarded_sequences(tools:dict):
 
     logger.info('Presenting rewarded sequences')
     logger.info(f'rewarded sequences: {reward_seq}')
+
+    # display images for 1 s before the highligh
+    background.draw()
+    instructions.draw()
+    for seq_name in stim_dict:
+        stim_dict[seq_name]['image'].draw()
+    win.flip()
+    core.wait(1)
 
     # start the flickering loop 
     start_time = time.time()
