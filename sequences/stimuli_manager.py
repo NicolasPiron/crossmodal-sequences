@@ -381,9 +381,9 @@ def run_question(tools:dict, slots:dict, start_item, end_item, rt_clock, global_
     if 'demo' in tools:
         demo = True
 
-    left_key = key_dict['left_key']
-    right_key = key_dict['right_key']
-    confirm_key = key_dict['confirm_key']
+    left_key = key_dict['left']
+    right_key = key_dict['right']
+    confirm_key = key_dict['confirm']
     wait_fun = tools['wait_fun']
     event_fun = tools['event_fun']
     clear_event_fun = tools['clear_event_fun']
@@ -524,9 +524,9 @@ def fade_out(tools, obj, clock, f_dur):
 
 def move_slider(slider, slider_positions:List[float], y:float, current_pos:int, keys:List[str], key_dict:Dict[str, str]):
     ''' To move the slider left or right based on the keys pressed.'''
-    if key_dict['left_key'] in keys:
+    if key_dict['left'] in keys:
         current_pos -= 1 if current_pos > 0 else 0
-    elif key_dict['right_key'] in keys:
+    elif key_dict['right'] in keys:
         current_pos += 1 if current_pos < len(slider_positions) - 1 else 0
     pos = slider_positions[current_pos]
     slider.pos = (pos, y)
