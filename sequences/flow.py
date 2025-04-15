@@ -32,7 +32,7 @@ def check_escape_or_break(tools, pause_key='b'):
         print(f"--- Break key pressed, pausing the experiment. Press {pause_key} to resume ---")
         if tools['logger']:
             tools['logger'].info("Break key pressed, pausing the experiment ...")
-        tools['keyboard'].waitKeys(keyList=[pause_key])
+        tools['adapt_waitKeys'](keyList=[pause_key])
         if tools['logger']:
             tools['logger'].info("Break key pressed again, resuming the experiment ...")
 

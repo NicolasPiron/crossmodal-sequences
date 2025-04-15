@@ -16,7 +16,7 @@ from sequences import instr as it
 import byte_triggers as bt
 import platform
 from sequences.common import get_win_dict
-from bonus_question import ask_all_seq
+from bonus_question import bonus_question
 
 def execute_run(debugging=False):
     ''' Main function, it executes a run of the experiment. Need to be called twice for the full experiment.
@@ -47,8 +47,8 @@ def execute_run(debugging=False):
         full_block_org[block_id] = sm.distribute_sequences_trial(sequence_names=run_org[block_id], n_trials=pm.n_trials)
 
     # get the rewarded sequences
-    n_seq_rd = pm.n_seq / 2
-    all_reward_info = sm.get_reward_info(two_run_org, n=n_seq_rd)
+    n_seq_rd = int(pm.n_seq / 2)
+    all_reward_info = sm.get_reward_info(two_run_org, seed=tools['seed'], n=n_seq_rd)
     reward_info = all_reward_info[f'run{int(exp_info["run"])}']
     tools['reward_info'] = reward_info
 
@@ -87,7 +87,7 @@ def execute_run(debugging=False):
             )
             
         logger.info(f'Run {tools["exp_info"]["run"]} completed successfully.')
-        logger.info('=============== End of run ===============')
+        logger.info('=============== End of core part ===============')
 
         return tools
     
@@ -260,9 +260,9 @@ def initialize_run(debugging):
     exp_info = {
         'ID': '00',
         'run': '01',
-        'block': '01',
-        'trial': '01',
-        'seq': '01',
+        'block': '04',
+        'trial': '03',
+        'seq': '06',
         'lang': 'fr'
     }
 
@@ -1013,13 +1013,7 @@ def pipeline(debugging=False):
     post_run_break(tools, pause_i=1)
     present_rewarded_sequences(tools)
     post_run_break(tools, pause_i=2)
-    ask_all_seq( # TODO: modify this func so it allows to reward participants
-        subject_id=tools['exp_info']['ID'], 
-        run_id=tools['exp_info']['run'], 
-        lang=tools['exp_info']['lang'],
-        win_dict=tools,
-    )
-    core.quit()
+    bonus_question(tools)
 
 def test_pipeline(debugging=True):
     tools = execute_run(debugging)

@@ -127,8 +127,8 @@ t_reward_info = 15
 bq_img_size = 0.1
 bq_hl_size = bq_img_size + 0.001
 
-# how much points rewarded (in cents)
-reward_value = 20
+# how much points rewarded (in chf)
+reward_value = 0.5
 
 # trigger mapping :
 # - trig1 : sequence + position -> between 11 and 126

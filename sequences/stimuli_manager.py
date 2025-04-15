@@ -7,22 +7,22 @@ from collections import Counter, defaultdict
 
 # tools to generate and pseudo-randomize sequences of stimuli
 
-def get_reward_info(two_run_org:Dict[str, Dict[str, List[str]]], n:int=3)-> Dict[str, List[str]]:
+def get_reward_info(two_run_org:Dict[str, Dict[str, List[str]]], seed:int, n:int=3)-> Dict[str, List[str]]:
     ''' For the whole experiment (2 runs), splits sequence names into rewarded and non rewarded. 
     The function needs a dict that looks like this: 
     {'run1': {'block1': ['L', 'E', 'G'], 'block2':[...], ...}, 'run2': {...}}. 
     All the sequences names are in the blocks 1 and 2 of each run (in the two last blocks, they are repeated).
     The function uses set() to remove duplicates in the list of sequences.
     '''
-    
+    random.seed(seed) # make sure the randomization is the same within the participant's runs
     reward_info = {}
     for run, blocks in two_run_org.items(): # for key, small dict in bigger dict
         reward_info[run] = {}
         all_seq = [] # use a list to be able to use += below
         for block in blocks.values():
             all_seq += block
-        all_seq = list(set(all_seq)) # remove duplicates
-        reward_info[run]['reward'] = random.sample(all_seq, 3)
+        all_seq = sorted(list(set(all_seq))) # remove duplicates
+        reward_info[run]['reward'] = random.sample(all_seq, n)
         reward_info[run]['no_reward'] = [seq for seq in all_seq if seq not in reward_info[run]['reward']]
 
     return reward_info

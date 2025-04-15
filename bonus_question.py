@@ -2,13 +2,15 @@ from psychopy import visual, event, core
 from pathlib import Path
 import random
 import glob
+import os
+import pandas as pd
 import sequences.params as pm
 import sequences.bonus_q as bq
 import sequences.stimuli_manager as sm
 import sequences.instr as it
 from sequences.common import get_win_dict
 
-def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win_dict, lang):
+def ask_sequence(start_item, seq_name, amodal_sequences, tools):
     '''Ask the participant to place the images in the correct order and save the data.
     
     Parameters
@@ -17,25 +19,30 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win
         The starting item of the sequence
     seq_name : str
         The name of the sequence
-    subject_id : str
-        The subject ID
-    run_id : str
-        The run ID
     amodal_sequences : dict
         A dictionary containing the sequences that are in the run {'A': [item1, item2, ...], ...}
-    win_dict : dict
-        A dictionary containing the window and background objects
+    tools : dict
+        A dictionary containing the tools needed for the experiment. It contains:
+            - exp_info: a dictionary containing the experiment information
+            - win: the window object
+            - background: the background object
+            - logger: the logger object
         
     Returns
     -------
-    win_dict : dict
-        A dictionary containing the window and background objects'''
+    '''
 
-    out_path = Path(f"{pm.output_dir}/sub-{subject_id}/sub-{subject_id}_run{run_id}_bonus_{seq_name}.csv")
+    subject_id = tools['exp_info']['ID']
+    run_id = tools['exp_info']['run']
+    lang = tools['exp_info']['lang']
+    win = tools['win']
+    background = tools['background']
+    aspect_ratio = tools['aspect_ratio']
+    logger = tools['logger']
 
-    win = win_dict['win']
-    background = win_dict['background']
-    aspect_ratio = win_dict['aspect_ratio']
+    out_dir = Path(f"{pm.output_dir}/sub-{subject_id}/bonus")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = Path(f"{out_dir}/sub-{subject_id}_run{run_id}_bonus_{seq_name}.csv")
 
     txt_instr2 = it.get_txt(lang, 'instr_bonus2_fn')
     instr2 = visual.TextStim(win, text=txt_instr2, pos=(0, 0.7), color="black")
@@ -168,19 +175,22 @@ def ask_sequence(start_item, seq_name, subject_id, run_id, amodal_sequences, win
         
         core.wait(0.01) 
     
-    return win_dict
+    if logger:
+        logger.info(f"Bonus question: sequence {seq_name} completed")
+    
+    return
 
-def ask_all_seq(subject_id, run_id, lang, win_dict=None):
+def ask_all_seq(tools:dict):
     '''Ask the participant to place the images in the correct order for all sequences in the run
     
     Parameters
     ----------
-    subject_id : str
-        The subject ID
-    run_id : str
-        The run ID
-    win_dict : dict
-        A dictionary containing the window and background objects
+    tools : dict
+        A dictionary containing the tools needed for the experiment. It contains:
+            - exp_info: a dictionary containing the experiment information
+            - win: the window object
+            - background: the background object
+            - logger: the logger object
         
     Returns
     -------
@@ -191,12 +201,16 @@ def ask_all_seq(subject_id, run_id, lang, win_dict=None):
         random.shuffle(items)
         return dict(items)
     
-    if win_dict is None:
-        win_dict = get_win_dict()
-
-    win = win_dict['win']
-    background = win_dict['background']
+    subject_id = tools['exp_info']['ID']
+    run_id = tools['exp_info']['run']
+    lang = tools['exp_info']['lang']
+    win = tools['win']
+    background = tools['background']
+    logger = tools['logger']
     win.mouseVisible = True
+
+    if logger:
+        logger.info('=============== Beginning of bonus questions ===============')
 
     seed = sm.set_seed(subject_id)
 
@@ -227,16 +241,13 @@ def ask_all_seq(subject_id, run_id, lang, win_dict=None):
         ask_sequence(
             start_item, 
             seq_name=seq_name, 
-            subject_id=subject_id,
-            run_id=run_id,
             amodal_sequences=amodal_sequences,
-            win_dict=win_dict,
-            lang=lang,
+            tools=tools,
         )
         
-    win.close()
-    print("All sequences completed")
-    return
+    if logger:
+        logger.info("Bonus question: all sequences completed")
+    return 
 
 def extract_sequences(two_run_org, run_id, all_amodal_sequences):
     ''' Helper func to extract the sequences that are in the run.
@@ -264,36 +275,134 @@ def extract_sequences(two_run_org, run_id, all_amodal_sequences):
     amodal_sequences = {k: v for k, v in all_amodal_sequences.items() if k in run_seq_names}
     return amodal_sequences
 
-def give_reward_feedback(subject_id, run_id, win_dict, lang):
-    ''' Give feedback to the participant about the reward they received '''
+def cpt_reward_feedback(tools:dict):
+    ''' Compute the amount due to the participant and save it in a file.
+    
+    Parameters
+    ----------
+    tools : dict
+        A dictionary containing the tools needed for the experiment. It contains:
+            - exp_info: a dictionary containing the experiment information
+            - win: the window object
+            - background: the background object
+            - logger: the logger object
+    '''
 
+    logger = tools['logger']
+    subject_id = tools['exp_info']['ID']
+    run_id = tools['exp_info']['run']
+    lang = tools['exp_info']['lang']
     # get the actual sequences that were used in the run
+    n_rw_seq = int(pm.n_seq / 2)
     seed = sm.set_seed(subject_id)
     all_amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang, seed=seed)
     two_run_org = sm.generate_run_org(all_amodal_sequences, seed=seed)
+    reward_info = sm.get_reward_info(two_run_org, seed, n=n_rw_seq)
+    run_rw_info = reward_info['run'+str(int(run_id))]
     amodal_sequences = extract_sequences(two_run_org, run_id, all_amodal_sequences)
     seq_names = list(amodal_sequences.keys())
     
     answers = bq.get_all_answers(subject_id, run_id, seq_names)
-    # save the concatenated answers to a file. 
-    # MAYBE put the real sequence in the df
+    # create a dataframe with the correct answers
+    corr_answers = pd.DataFrame()
+    for seq_name, seq in amodal_sequences.items():
+        cols = {'sequence':6*[seq_name], 'correct_answer':seq, 'slot':list(range(0, 6))}
+        subdf = pd.DataFrame(cols)
+        corr_answers = pd.concat([corr_answers, subdf], ignore_index=True)
+    # merge the two dataframes on the sequence and slot columns
+    answers = pd.merge(answers, corr_answers, on=['sequence', 'slot'], how='inner')
+    # check if the answers are correct
+    answers['correct'] = answers['correct_answer'] == answers['answer']
+    answers['rewarded'] = answers['sequence'].isin(run_rw_info['reward']) # bool vals to indicate if the sequence was rewarded
+
+    n_corr_total = answers['correct'].sum() - 6 # total number of correct answers
+    # filter out the non-rewarded sequences and extrat the number of correct answers and compute the reward amount
+    rew_answers = answers[answers['rewarded']] # only the rewarded sequences
+    n_correct_rw = rew_answers['correct'].sum() - n_rw_seq # remove the 3 correct answers by default caused by the first item's presence
+    reward_amount = n_correct_rw * pm.reward_value
+
+    if logger:
+        logger.info(f"Bonus question: {n_corr_total} correct answers")
+        logger.info(f"Bonus question: {n_correct_rw} rewarded answers")
+        logger.info(f"Reward amount: {reward_amount} CHF")
+
     out_path = Path(f'{pm.output_dir}/sub-{subject_id}/sub-{subject_id}_run{run_id}_bonus.csv')
     answers.to_csv(out_path, index=False)
+    if logger:
+        logger.info("File with subject's performance saved")
+    # save the reward amount in a file
+    reward_file = Path(f'{pm.output_dir}/sub-{subject_id}/sub-{subject_id}_run{run_id}_bonus.txt')
+    with open(reward_file, 'w') as f:
+        f.write(f"Reward amount: {reward_amount} CHF\n")
+        f.write(f"Rewarded sequences: {run_rw_info['reward']}\n")
+        f.write(f"Number of correct answers: {n_corr_total}\n")
+        f.write(f"Number of correct rewarded answers: {n_correct_rw}\n")
 
-    # NEXT : get for each sequence the correct answer and the participant's answer as two lists.
-    # write a function that takes the two lists and computes the reward in bonus_q.py
-    # save the rewaded amount in a file, and show the feedback to the participant
+    if logger:
+        logger.info("File with reward amount saved")
 
+    return reward_amount, n_correct_rw
+
+def display_rwd_amt(tools, reward_amount):
+    ''' Display the reward amount and the number of correct answers.'''
+
+    lang = tools['exp_info']['lang']
+    win = tools['win']
+    background = tools['background']
+    logger = tools['logger']
+
+    if reward_amount > 0:
+        if lang == 'fr':
+            txt = "Montant de la récompense: "
+        else:
+            txt = "Reward amount: "
+        txt += f"{reward_amount} CHF\n!"
+    else:
+        if lang == 'fr':
+            txt = "Vous n'avez pas gagné d'argent supplémentaire\n"
+        else:
+            txt = "You did not win any extra money\n"
+    
+    reward_text = visual.TextStim(
+        win,
+        text=txt,
+        pos=(0, 0),
+        color="black",
+    )
+    background.draw()
+    reward_text.draw()
+    win.flip()
+    core.wait(5)
+
+    if logger:
+        logger.info("=============== End of bonus question ===============")
+        logger.info(f"=============== Run {tools['exp_info']['run']} gracefully closed ===============")
+    
+    win.close()
+    core.quit()
     return
+
+def bonus_question(tools):
+    ask_all_seq(tools)
+    rwd, _ = cpt_reward_feedback(tools)
+    display_rwd_amt(tools, rwd)
 
 if __name__ == "__main__":
     subject_id = input('Enter subject ID: ')
     run_id = input('Enter run ID: ')
-    ask_all_seq(
-        subject_id=subject_id, 
-        run_id=run_id,
-        lang='fr',
-        win_dict=None, 
-    )
-    core.quit()
+    win_dict = get_win_dict()
+    tools = {
+        'exp_info': {
+            'ID': subject_id,
+            'run': run_id,
+            'lang': 'fr',
+        },
+        'win': win_dict['win'],
+        'background': win_dict['background'],
+        'aspect_ratio': win_dict['aspect_ratio'],
+        'logger': None,
+    }
+    ask_all_seq(tools)
+    rwd, n_corr = cpt_reward_feedback(tools)
+    display_rwd_amt(tools, rwd)
 

@@ -23,7 +23,7 @@ def get_all_answers(s_id, r_id, seq_names):
 
 def read_seq_file(s_id, r_id, seq_name):
     ''' Read the sequence file and return a dictionary with the sequences '''
-    fn = Path(f'{pm.output_dir}/sub-{s_id}/sub-{s_id}_run{r_id}_bonus_{seq_name}.csv')
+    fn = Path(f'{pm.output_dir}/sub-{s_id}/bonus/sub-{s_id}_run{r_id}_bonus_{seq_name}.csv')
     return pd.read_csv(fn)
 
 # functions for the interactive slot filling task
@@ -72,7 +72,7 @@ def save_slot_data(start_item_img, slots, out_path):
     first_img_cat = sm.get_cat_from_stim(first_img_path)
     first_img = os.path.basename(first_img_path.split(".")[0].split("_")[0])
     with open(out_path, "w") as f:
-        f.write("slot,stimulus,category\n")
+        f.write("slot,answer,answer_cat\n")
         f.write(f"0,{first_img},{first_img_cat}\n")
         for i, slot in enumerate(slots):
             stim_path = slot["image"]["stim"].image
