@@ -6,38 +6,95 @@
 #     for _ in range(100):
 #         test_pipeline()
 
-import sequences.stimuli_manager as sm
-import sequences.params as pm
-import pandas as pd
+from psychopy import visual, core, event
+import numpy as np
+from sequences.common import get_win_dict
 
-def extract_sequences(two_run_org, run_id, all_amodal_sequences):
-    run_seq = two_run_org['run'+str(int(run_id))]
-    run_seq_names = []
-    for val in run_seq.values(): # flatten the list of lists
-        for i in val:
-            run_seq_names.append(i)
-    run_seq_names = set(run_seq_names)
-    amodal_sequences = {k: v for k, v in all_amodal_sequences.items() if k in run_seq_names}
-    return amodal_sequences
 
-subject_id = '01'
-run_id = '01'
-lang = 'fr'
-seed = sm.set_seed(subject_id)
-all_amodal_sequences = sm.generate_sequences(pm.input_dir, pm.seq_structures, lang, seed=seed)
-two_run_org = sm.generate_run_org(all_amodal_sequences, seed=seed)
-amodal_sequences = extract_sequences(two_run_org, run_id, all_amodal_sequences)
-seq_names = list(amodal_sequences.keys())
-print(seq_names)
+d = get_win_dict()
+win = d["win"]
+background = d["background"]
+aspect_ratio = d["aspect_ratio"]
 
-df = pd.DataFrame()
-for seq_name, seq in amodal_sequences.items():
-    cols = {
-        'sequence':6*[seq_name],
-        'correct_answer':seq,
-    }
-    subdf = pd.DataFrame(cols)
-    df = pd.concat([df, subdf], ignore_index=True)
+bar_c = '#254E70'
+tick_c = '#254E70'
+slider_c = 'white'
+slider_lc = 'black'
 
-print(df)
- 
+y = -0.2
+# linear spacing of the ticks between -0.4 and 0.4 with 7 ticks
+far_l = -0.5
+far_r = 0.5
+slider_positions = np.linspace(far_l, far_r, 7)
+bar_len = far_r - far_l
+start_pos = 3  # start in the middle
+# slider_positions = [-0.4, -0.3, -0.2, 0, 0.2, 0.3, 0.4]
+
+txt = visual.TextStim(
+    win,
+    text="How focused were you during the block?",
+    pos=(0, 0.5),
+    color="black",
+)
+
+bar = visual.Rect(
+    win,
+    width=bar_len,
+    height=0.05*aspect_ratio,
+    fillColor=bar_c,
+    pos=(0, y),
+)
+slider = visual.Rect(
+    win,
+    width=0.02,
+    height=0.1*aspect_ratio,
+    fillColor=slider_c,
+    lineColor=slider_lc,
+    pos=(slider_positions[start_pos], y),
+)
+
+ticks = [
+    visual.Rect(
+        win,
+        width=0.01,
+        height=0.05*aspect_ratio,
+        fillColor=tick_c,
+        pos=(x, y),
+    )
+    for x in slider_positions
+]
+
+def move_slider(slider, current_pos, keys):
+    if 'left' in keys:
+        current_pos -= 1 if current_pos > 0 else 0
+    elif 'right' in keys:
+        current_pos += 1 if current_pos < len(slider_positions) - 1 else 0
+    pos = slider_positions[current_pos]
+    slider.pos = (pos, y)
+    return current_pos
+
+background.draw()
+txt.draw()
+bar.draw()
+slider.draw()
+win.flip()
+
+current_pos = start_pos
+run = True
+while run:
+    keys = event.getKeys()
+    if 'space' in keys:
+        run = False
+        print(f'User selected the value : {current_pos+1}')
+    current_pos = move_slider(slider, current_pos, keys)
+    background.draw()
+    txt.draw()
+    bar.draw()
+    for tick in ticks:
+        tick.draw()
+    slider.draw()
+    win.flip()
+    core.wait(0.01)
+
+
+core.wait(1)

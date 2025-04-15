@@ -4,17 +4,18 @@ import glob
 import time
 import random
 import math
+import pandas as pd
+import numpy as np
+import byte_triggers as bt
+import platform
 from datetime import datetime
 from psychopy.gui import DlgFromDict
 from psychopy.hardware.keyboard import Keyboard
 from psychopy import visual, core, event, sound
-import pandas as pd
 from sequences import stimuli_manager as sm
 from sequences import flow as fl
 from sequences import params as pm
 from sequences import instr as it
-import byte_triggers as bt
-import platform
 from sequences.common import get_win_dict
 from bonus_question import bonus_question
 
@@ -95,173 +96,7 @@ def execute_run(debugging=False):
         fl.log_exceptions(f'An error occurred during the run {tools["exp_info"]["run"]}, block {tools["tracker"]["block_id"]}: {exc}', 
             logger, 
             tools["win"])
-
-def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, block_org):
-    ''' Executes a full block: sequence presentation and questioning. Returns the updated tracker.
-    
-    Parameters
-    ----------
-    tools : dict
-        Dictionary containing the tools needed for the experiment.
-    amodal_sequences : dict
-        Dictionary containing the multimodal sequences of items. {sequence_name: [item1, item2, ...]}
-    question_mod_org : dict
-        Dictionary containing the organization of the modalities for the questions. {block1: {trial1: [mod1, mod2, ...]}}
-    first_seq_mod_org : dict
-        Dictionary containing the organization of the modalities for the first sequence of each trial. {block1: [mod1, mod2, ...]}
-    block_org : dict
-        Dictionary containing the organization of the sequences for each block. {trial1: [sequence1, sequence2, ...]}
         
-    Returns
-    -------
-    tools : dict
-        Dictionary containing the tools needed for the experiment. The tracker is updated in this function.
-    '''
-
-    # this code has been added to handle the case where the user wants to start from a specific point
-    # check if we are starting from a specific point (unusual case)
-    if tools['starting_point'] is not None:
-        if tools['starting_point']['block'] == tools['tracker']['block_id']: # if we are not in the specific starting block, start at 1 because
-            # we are starting from the beginning of the block, as usual. 
-            n_skip = int(tools['starting_point']['trial']) - 1
-        else:
-            n_skip = 0
-    else:
-        n_skip = 0
-
-    for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
-        tools['tracker']['trial_id'] = j
-        trial_seq_org, trial_mod_org = initialize_trial_sequences(
-            tools=tools,
-            first_seq_mod_org=first_seq_mod_org,
-            block_org=block_org
-        )
-        present_sequences(
-            tools=tools,
-            amodal_sequences=amodal_sequences, 
-            trial_seq_org=trial_seq_org, 
-            trial_mod_org=trial_mod_org
-        )
-                            
-        tools = handle_questioning(
-            tools=tools, 
-            amodal_sequences=amodal_sequences, 
-            trial_seq_org=trial_seq_org, 
-            question_mod_org=question_mod_org
-        )
-    
-    end_block_break_quest(tools)
-    
-    logger = tools['logger']
-    logger.info(f'Block {tools["tracker"]["block_id"]} completed successfully.')
-    logger.info('========== End of block ==========')
-
-    return tools
-
-def end_block_break_quest(tools):
-     
-    # TODO: first questions about vigilance
-    if tools['tracker']['block_id'] < 4: # break for the first 3 blocks, then another longer break is proposed
-        post_block_break(tools)
-    # TODO: ask what they were thinking about
-
-
-def post_block_break(tools):
-    ''' Function to present a break between blocks. Returns nothing. '''
-    win = tools['win']
-    background = tools['background']
-    logger = tools['logger']
-    pport = tools['pport']
-    block_id = tools['tracker']['block_id']
-
-    text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
-    instructions = visual.TextStim(
-        win=tools['win'],
-        text=text,
-        pos=(0, 0.55),
-        height=pm.text_height,
-        color='black',
-        units='norm'
-    ) 
-
-    # log and triggers before and after break
-    logger.info(f'block {block_id} break start')
-    background.draw()
-    instructions.draw()
-    win.callOnFlip(pport.signal, pm.triggers['misc']['block_pause'])
-    win.flip()
-    core.wait(pm.t_post_block)
-    pport.signal(pm.triggers['misc']['block_endpause'])
-    logger.info(f'block {block_id} break stop')
-    return
-
-def handle_questioning(tools, amodal_sequences, trial_seq_org, question_mod_org):
-    ''' Asks 3 questions and give feedbacks for a given trial. Returns the updated tracker.
-    
-    Parameters
-    ----------
-    tools : dict
-        Dictionary containing the tools needed for the experiment.
-    amodal_sequences : dict
-        Dictionary containing the multimodal sequences of items. {sequence_name: [item1, item2, ...]}
-    trial_seq_org : list
-        List containing the sequences for the trial. e.g. ['A', 'B', 'C', 'A', 'B', 'C']
-    question_mod_org : dict
-        Dictionary containing the organization of the modalities for the questions. {block1: {trial1: [mod1, mod2, ...]}}
-
-    Returns
-    -------
-    tools : dict
-        Dictionary containing the tools needed for the experiment. The tracker is updated in this function.
-    '''
-    tracker = tools['tracker'] # I extract it here, and it is reasigned in tools at the end of the function
-    tracker['points_attributed'] = 0 # reset points for each trial
-    question_modalities = question_mod_org[f'block{tracker["block_id"]}'][f'trial{tracker["trial_id"]}']
-    t_prep = pm.t_prep
-    t_iqi = pm.t_iqi
-    if tools['debugging']:
-        t_prep = 0.01
-        t_iqi = 0.01
-    
-    text = it.get_txt(tools['exp_info']['lang'], 'instr_q_fn')
-    instructions = visual.TextStim(
-        win=tools['win'],
-        text=text,
-        pos=(0, 0.55),
-        height=pm.text_height,
-        color='black',
-        units='norm'
-    ) 
-
-    tools['background'].draw()
-    instructions.draw()
-    tools['win'].flip()
-    core.wait(t_prep)
-
-    for m, seq_name in enumerate(trial_seq_org[0:3]): # 3 questions per trial because 3 sequences presented twice
-        tracker['question_id'] = m + 1
-        tracker = ask_trial_question(
-            tools=tools, 
-            tracker=tracker,
-            amodal_sequences=amodal_sequences,
-            question_modalities=question_modalities,
-            seq_name=seq_name
-        )
-        out_dir = tools['out_dir']
-        run_id = tools['exp_info']['run']
-        subject_id = tools['exp_info']['ID']
-        pd.DataFrame(tracker['data']).to_csv(f"{out_dir}/sub-{subject_id}_run-{run_id}.csv", index=False)
-        core.wait(t_iqi)
-                
-    # encouraging message
-    provide_trial_feedback(
-        tools=tools, 
-        tracker=tracker
-    )
-    tools['tracker'] = tracker
-    return tools
-
-
 def initialize_run(debugging):
     ''' Initializes a run. Creates the output dir, set or get the seed to control randomization and 
     returns a dictionary containing the tools needed for the experiment (window, pport etc).
@@ -384,6 +219,378 @@ def initialize_run(debugging):
     
     return tools
 
+def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, block_org):
+    ''' Executes a full block: sequence presentation and questioning. Returns the updated tracker.
+    
+    Parameters
+    ----------
+    tools : dict
+        Dictionary containing the tools needed for the experiment.
+    amodal_sequences : dict
+        Dictionary containing the multimodal sequences of items. {sequence_name: [item1, item2, ...]}
+    question_mod_org : dict
+        Dictionary containing the organization of the modalities for the questions. {block1: {trial1: [mod1, mod2, ...]}}
+    first_seq_mod_org : dict
+        Dictionary containing the organization of the modalities for the first sequence of each trial. {block1: [mod1, mod2, ...]}
+    block_org : dict
+        Dictionary containing the organization of the sequences for each block. {trial1: [sequence1, sequence2, ...]}
+        
+    Returns
+    -------
+    tools : dict
+        Dictionary containing the tools needed for the experiment. The tracker is updated in this function.
+    '''
+
+    # this code has been added to handle the case where the user wants to start from a specific point
+    # check if we are starting from a specific point (unusual case)
+    if tools['starting_point'] is not None:
+        if tools['starting_point']['block'] == tools['tracker']['block_id']: # if we are not in the specific starting block, start at 1 because
+            # we are starting from the beginning of the block, as usual. 
+            n_skip = int(tools['starting_point']['trial']) - 1
+        else:
+            n_skip = 0
+    else:
+        n_skip = 0
+
+    for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
+        tools['tracker']['trial_id'] = j
+        trial_seq_org, trial_mod_org = initialize_trial_sequences(
+            tools=tools,
+            first_seq_mod_org=first_seq_mod_org,
+            block_org=block_org
+        )
+        present_sequences(
+            tools=tools,
+            amodal_sequences=amodal_sequences, 
+            trial_seq_org=trial_seq_org, 
+            trial_mod_org=trial_mod_org
+        )
+                            
+        tools = handle_questioning(
+            tools=tools, 
+            amodal_sequences=amodal_sequences, 
+            trial_seq_org=trial_seq_org, 
+            question_mod_org=question_mod_org
+        )
+    
+    end_block_break_quest(tools)
+    
+    logger = tools['logger']
+    logger.info(f'Block {tools["tracker"]["block_id"]} completed successfully.')
+    logger.info('========== End of block ==========')
+
+    return tools
+
+def initialize_block(tools, run_org):
+    ''' Initialize a block and log info. Returns nothing.
+    
+    Parameters
+    ----------
+    tools : dict
+        Dictionary containing the tools needed for the experiment.
+
+    run_org : dict
+        Dictionary containing the organization of the sequences for each block. {block1:[sequence1, sequence2, ...]}'''
+
+    logger = tools['logger']
+    win = tools['win']
+    background = tools['background']
+    adapt_waitKeys = tools['adapt_waitKeys']
+    tracker = tools['tracker'] # the tracker is extracted here but not modified (so no need to return it)
+    chosen_sequences = run_org[f'block{tracker["block_id"]}']
+    logger.info(f'block: {tracker["block_id"]}')
+    logger.info(f'sequences: {chosen_sequences}')
+
+    if tools['exp_info']['lang'] == 'fr':
+        txt = f"Bloc {tracker['block_id']} \nAttendez le feu vert de l'experimentateur, puis appuyez sur la touche ESPACE pour commencer!"
+    else:
+        txt = f"Block {tracker['block_id']} \nWait for the experimenter's signal, then press the SPACE key to start!"
+    block_info = visual.TextStim(win=win,
+        text=txt,
+        pos=(0, 0),
+        font="Arial",
+        color='black', 
+        height=pm.text_height,
+        units='norm'
+    )
+                
+    background.draw()
+    block_info.draw()
+    win.flip()
+    adapt_waitKeys(keyList=[pm.key_dict['confirm']])
+    return
+
+def end_block_break_quest(tools):
+    ''' Presents the small Likert scale questions at the end of the block + a break.'''
+    
+    logger = tools['logger']
+    block_id = tools['tracker']['block_id']
+    st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]
+
+    # ask how vigilant and focused questions
+    vigi_text = it.get_txt(tools['exp_info']['lang'], 'quest_vigi_fn')
+    logger.info('Asking the vigilance question')
+    vigi_resp = present_questionnaire(
+        tools=tools, 
+        text=vigi_text, 
+        scale_text1=st1, 
+        scale_text2=st2
+    )
+    logger.info(f"Block {block_id} vigilance response: {vigi_resp}")
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
+
+    focus_text = it.get_txt(tools['exp_info']['lang'], 'quest_focus_fn')
+    logger.info('Asking the focus question')
+    focus_resp = present_questionnaire(
+        tools=tools, 
+        text=focus_text,
+        scale_text1=st1, 
+        scale_text2=st2
+    )
+    logger.info(f"Block {block_id} focus response: {focus_resp}")
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
+
+    if tools['tracker']['block_id'] < 4: # break for the first 3 blocks, then another longer break is proposed
+        post_block_break(tools)
+        # ask what was the participant thinking about during break
+        think_text = it.get_txt(tools['exp_info']['lang'], 'quest_think_fn')
+        logger.info('Asking the focus question')
+        think_resp = present_questionnaire(
+            tools=tools, 
+            text=think_text,
+            scale_text1=st1, 
+            scale_text2=st2 
+        )
+        logger.info(f"Block {block_id} thinking response: {think_resp}")
+        fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
+
+
+def present_questionnaire(tools, text, scale_text1, scale_text2):
+    ''' Function to present a questionnaire to the participant. It is a slider with 7 ticks.'''
+
+    win = tools['win']
+    aspect_ratio = tools['aspect_ratio']
+    background = tools['background']
+    slider_pos = np.linspace(pm.far_l, pm.far_r, pm.n_ticks)
+    start_pos = int(np.floor(pm.n_ticks / 2)) # start in the middle
+
+    txt = visual.TextStim(
+        win,
+        text=text,
+        height=pm.text_height,
+        pos=(0, 0.5),
+        color="black",
+    )
+
+    s1 = visual.TextStim(
+        win,
+        text=scale_text1,
+        height=pm.text_height,
+        pos=(pm.far_l, pm.y_bar+pm.stxt_up),
+        color="black",
+    )
+
+    s2 = visual.TextStim(
+        win,
+        text=scale_text2,
+        height=pm.text_height,
+        pos=(pm.far_r, pm.y_bar+pm.stxt_up),
+        color="black",
+    )
+
+    bar = visual.Rect(
+        win,
+        width=pm.bar_len,
+        height=0.05*aspect_ratio,
+        fillColor=pm.bar_c,
+        pos=(0, pm.y_bar),
+    )
+    slider = visual.Rect(
+        win,
+        width=0.02,
+        height=0.1*aspect_ratio,
+        fillColor=pm.slider_c,
+        lineColor=pm.slider_lc,
+        pos=(slider_pos[start_pos], pm.y_bar),
+    )
+
+    ticks = [
+        visual.Rect(
+            win,
+            width=0.01,
+            height=0.05*aspect_ratio,
+            fillColor=pm.tick_c,
+            pos=(x, pm.y_bar),
+        )
+        for x in slider_pos
+    ]
+
+    def draw_all():
+        background.draw()
+        txt.draw()
+        s1.draw()
+        s2.draw()
+        bar.draw()
+        for tick in ticks:
+            tick.draw()
+        slider.draw()
+
+    draw_all()
+    win.flip()
+
+    current_pos = start_pos
+    run = True
+    while run:
+        keys = event.getKeys()
+        if pm.key_dict['confirm'] in keys:
+            run = False
+        current_pos = sm.move_slider(slider, slider_pos, pm.y_bar, current_pos, keys, pm.key_dict)
+        draw_all()
+        win.flip()
+        core.wait(0.001)
+
+    slider.fillColor = pm.validation_c
+    draw_all()
+    win.flip()
+    core.wait(0.5)
+    background.draw()
+    win.flip()
+    core.wait(1.5)
+
+    return current_pos+1
+
+def post_block_break(tools):
+    ''' Function to present a break between blocks. Returns nothing. '''
+    win = tools['win']
+    background = tools['background']
+    logger = tools['logger']
+    pport = tools['pport']
+    block_id = tools['tracker']['block_id']
+
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
+    instructions = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0.5),
+        height=pm.text_height,
+        color='black',
+        units='norm'
+    ) 
+
+    # log and triggers before and after break
+    logger.info(f'block {block_id} break start')
+    background.draw()
+    instructions.draw()
+    win.callOnFlip(pport.signal, pm.triggers['misc']['block_pause'])
+    win.flip()
+    core.wait(pm.t_post_block)
+    pport.signal(pm.triggers['misc']['block_endpause'])
+    logger.info(f'block {block_id} break stop')
+    return
+
+def post_run_break(tools, pause_i):
+    ''' Break post run. Returns nothing. '''
+
+    pport = tools['pport']
+    logger = tools['logger']
+    win = tools['win']
+    background = tools['background']
+
+    # sound indicating the end of the break
+    end_sound = sound.Sound(pm.snd_endPause_fn)
+    # intructions
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
+    instructions = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0.55),
+        height=pm.text_height,
+        color='black',
+        units='norm'
+    ) 
+
+    # TODO: display a moving object so the participant doesn't phase out
+    # log and triggers before and after break
+    logger.info(f'post run break {pause_i} start')
+    background.draw()
+    instructions.draw()
+    win.callOnFlip(pport.signal, pm.triggers['misc']['run_pause'])
+    win.flip()
+    core.wait(pm.t_post_run-1) # 90s
+    background.draw()
+    instructions.draw()
+    win.callOnFlip(end_sound.play)
+    win.flip()
+    core.wait(1) # wait for the sound to finish
+    pport.signal(pm.triggers['misc']['run_endpause'])
+    logger.info(f'post run break {pause_i} end')
+
+def handle_questioning(tools, amodal_sequences, trial_seq_org, question_mod_org):
+    ''' Asks 3 questions and give feedbacks for a given trial. Returns the updated tracker.
+    
+    Parameters
+    ----------
+    tools : dict
+        Dictionary containing the tools needed for the experiment.
+    amodal_sequences : dict
+        Dictionary containing the multimodal sequences of items. {sequence_name: [item1, item2, ...]}
+    trial_seq_org : list
+        List containing the sequences for the trial. e.g. ['A', 'B', 'C', 'A', 'B', 'C']
+    question_mod_org : dict
+        Dictionary containing the organization of the modalities for the questions. {block1: {trial1: [mod1, mod2, ...]}}
+
+    Returns
+    -------
+    tools : dict
+        Dictionary containing the tools needed for the experiment. The tracker is updated in this function.
+    '''
+    tracker = tools['tracker'] # I extract it here, and it is reasigned in tools at the end of the function
+    tracker['points_attributed'] = 0 # reset points for each trial
+    question_modalities = question_mod_org[f'block{tracker["block_id"]}'][f'trial{tracker["trial_id"]}']
+    t_prep = pm.t_prep
+    t_iqi = pm.t_iqi
+    if tools['debugging']:
+        t_prep = 0.01
+        t_iqi = 0.01
+    
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_q_fn')
+    instructions = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0.55),
+        height=pm.text_height,
+        color='black',
+        units='norm'
+    ) 
+
+    tools['background'].draw()
+    instructions.draw()
+    tools['win'].flip()
+    core.wait(t_prep)
+
+    for m, seq_name in enumerate(trial_seq_org[0:3]): # 3 questions per trial because 3 sequences presented twice
+        tracker['question_id'] = m + 1
+        tracker = ask_trial_question(
+            tools=tools, 
+            tracker=tracker,
+            amodal_sequences=amodal_sequences,
+            question_modalities=question_modalities,
+            seq_name=seq_name
+        )
+        out_dir = tools['out_dir']
+        run_id = tools['exp_info']['run']
+        subject_id = tools['exp_info']['ID']
+        pd.DataFrame(tracker['data']).to_csv(f"{out_dir}/sub-{subject_id}_run-{run_id}.csv", index=False)
+        core.wait(t_iqi)
+                
+    # encouraging message
+    provide_trial_feedback(
+        tools=tools, 
+        tracker=tracker
+    )
+    tools['tracker'] = tracker
+    return tools
+
 def present_instructions(tools):
     '''Presents the instructions to the participant.'''
 
@@ -396,8 +603,8 @@ def present_instructions(tools):
         background.draw()
         instr.draw()
         win.flip()
-        fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
-        adapt_waitKeys(keyList=['space'])
+        fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
+        adapt_waitKeys(keyList=[pm.key_dict['confirm']])
 
     if exp_info['lang'] == 'fr':
         txt = "Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer."
@@ -411,7 +618,7 @@ def present_instructions(tools):
             background=background,
             t=pm.t
         )
-        adapt_waitKeys(keyList=['space'])
+        adapt_waitKeys(keyList=[pm.key_dict['confirm']])
 
     instr1 = it.get_txt(exp_info['lang'], 'instr1_fn')
     instr2 = it.get_txt(exp_info['lang'], 'instr2_fn')
@@ -498,7 +705,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     logger.info(f'question number: {tracker["question_id"]}')
     logger.info(f'sequence name: {seq_name}')
-    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
 
     sequence = amodal_sequences[seq_name] # redefine the sequence to be used for the question
     if seq_name in tracker['used_items']: # check if the items used for the question have already been used
@@ -626,7 +833,7 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     tracker['points_attributed'] += n_points
     fb_trig = 'fb_correct' if correct else 'fb_incorrect'
 
-    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
 
     feedback = visual.TextStim(win=win,
         text=feedback_txt,
@@ -701,44 +908,6 @@ def initialize_trial_sequences(tools, first_seq_mod_org, block_org):
 
     return trial_seq_org,trial_mod_org
 
-def initialize_block(tools, run_org):
-    ''' Initialize a block and log info. Returns nothing.
-    
-    Parameters
-    ----------
-    tools : dict
-        Dictionary containing the tools needed for the experiment.
-
-    run_org : dict
-        Dictionary containing the organization of the sequences for each block. {block1:[sequence1, sequence2, ...]}'''
-
-    logger = tools['logger']
-    win = tools['win']
-    background = tools['background']
-    adapt_waitKeys = tools['adapt_waitKeys']
-    tracker = tools['tracker'] # the tracker is extracted here but not modified (so no need to return it)
-    chosen_sequences = run_org[f'block{tracker["block_id"]}']
-    logger.info(f'block: {tracker["block_id"]}')
-    logger.info(f'sequences: {chosen_sequences}')
-
-    if tools['exp_info']['lang'] == 'fr':
-        txt = f"Bloc {tracker['block_id']} \nAttendez le feu vert de l'experimentateur, puis appuyez sur la touche ESPACE pour commencer!"
-    else:
-        txt = f"Block {tracker['block_id']} \nWait for the experimenter's signal, then press the SPACE key to start!"
-    block_info = visual.TextStim(win=win,
-        text=txt,
-        pos=(0, 0),
-        font="Arial",
-        color='black', 
-        height=pm.text_height,
-        units='norm'
-    )
-                
-    background.draw()
-    block_info.draw()
-    win.flip()
-    adapt_waitKeys(keyList=['space'])
-    return
 
 def provide_trial_feedback(tools, tracker):
     ''' Provide feedback at the end of a trial. Returns nothing. '''
@@ -757,9 +926,9 @@ def provide_trial_feedback(tools, tracker):
 
     if tracker['trial_id'] == 3:
         if tools['exp_info']['lang'] == 'fr':
-            block_info = f"Fin du bloc {tracker['block_id']}. Le bloc suivant va commencer."
+            block_info = f"Fin du bloc {tracker['block_id']}. \nRépondez aux questions suivantes et profitez d'une courte pause."
         else:
-            block_info = f"End of block {tracker['block_id']}. The next block will start."
+            block_info = f"End of block {tracker['block_id']}. \nAnswer the following questions and enjoy a short break."
     else:
         if tools['exp_info']['lang'] == 'fr':
             block_info = "L'essai suivant va commencer."
@@ -837,7 +1006,7 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
     trig1 = pm.triggers['seq_pos'][sequence_name][i] # key is seq name (e.g., 'A') and then index of the item to find trigger in the list
     trig2 = pm.triggers['mod_cat'][modality][stim_cat] # keys are 'img'/'txt' and category names (e.g., 'animals')
                         
-    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause_key'])
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
     stim_image = visual.ImageStim(win=win,
         image=stim,
         size=(pm.img_size, pm.img_size*aspect_ratio)
@@ -883,43 +1052,6 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
     # core.wait(t_isi)
     fl.wait_frate(win, [background, fix_cross], frate=frate, t=t_isi)
     return
-
-def post_run_break(tools, pause_i):
-    ''' Break post run. Returns nothing. '''
-
-    pport = tools['pport']
-    logger = tools['logger']
-    win = tools['win']
-    background = tools['background']
-
-    # sound indicating the end of the break
-    end_sound = sound.Sound(pm.snd_endPause_fn)
-    # intructions
-    text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
-    instructions = visual.TextStim(
-        win=tools['win'],
-        text=text,
-        pos=(0, 0.55),
-        height=pm.text_height,
-        color='black',
-        units='norm'
-    ) 
-
-    # TODO: display a moving object so the participant doesn't phase out
-    # log and triggers before and after break
-    logger.info(f'post run break {pause_i} start')
-    background.draw()
-    instructions.draw()
-    win.callOnFlip(pport.signal, pm.triggers['misc']['run_pause'])
-    win.flip()
-    core.wait(pm.t_post_run-1) # 90s
-    background.draw()
-    instructions.draw()
-    win.callOnFlip(end_sound.play)
-    win.flip()
-    core.wait(1) # wait for the sound to finish
-    pport.signal(pm.triggers['misc']['run_endpause'])
-    logger.info(f'post run break {pause_i} end')
 
 def present_rewarded_sequences(tools:dict):
     ''' Tells the participant which sequences are rewarded for the last question.'''

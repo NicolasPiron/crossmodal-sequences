@@ -518,6 +518,20 @@ def fade_out(tools, obj, clock, f_dur):
         obj.draw()
         tools['win'].flip()
 
+#############################################
+ #        Questionnaire functions           #
+#############################################
+
+def move_slider(slider, slider_positions:List[float], y:float, current_pos:int, keys:List[str], key_dict:Dict[str, str]):
+    ''' To move the slider left or right based on the keys pressed.'''
+    if key_dict['left_key'] in keys:
+        current_pos -= 1 if current_pos > 0 else 0
+    elif key_dict['right_key'] in keys:
+        current_pos += 1 if current_pos < len(slider_positions) - 1 else 0
+    pos = slider_positions[current_pos]
+    slider.pos = (pos, y)
+    return current_pos
+
 """
 ********   TEST FUNCTIONS   *********
 *                                     *

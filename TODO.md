@@ -1,6 +1,4 @@
 # to add : 
-
-- reward system
 - add 12 sounds, instruments. 
 
 # to complete/modify :

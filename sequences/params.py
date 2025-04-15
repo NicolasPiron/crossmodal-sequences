@@ -24,12 +24,17 @@ instr_fnames = {
     'instr_stimpres3_fn' : 'instr_stim_pres3.txt',
     'instr_pause_fn': 'instr_pause.txt', 
     'instr_reward_fn': 'instr_reward.txt',
+    'quest_vigi_fn': 'quest_vigilance.txt',
+    'quest_focus_fn': 'quest_focus.txt',
+    'quest_think_fn': 'quest_think.txt',
 }
 key_dict = {
-    'left_key' : '1',
-    'confirm_key' : '2',
-    'right_key' : '3',
-    'pause_key' : '4', 
+    'left' : '1',
+    'confirm' : '2',
+    'right' : '3',
+    'pause' : 'b',
+    'up' : '4',
+    'down' : '5',
 }
 
 # stim config
@@ -107,7 +112,7 @@ t_viz_target = 3
 t_act = 2
 t_fb = 1
 t_iqi = 0.5
-t_post_q = 3
+t_post_q = 5
 t_post_block = 30 # To adjust after discussion
 t_post_run = 1
 q_img_size = 0.2
@@ -115,6 +120,23 @@ q_slot_size = q_img_size + 0.001
 hl_size = q_slot_size + 0.001
 y_pos = 0.25
 max_points = 9
+
+# for the questionnaire after each block
+bar_c = '#254E70'
+tick_c = '#254E70'
+slider_c = 'white'
+validation_c = '#AEF3E7'
+slider_lc = 'black'
+y_bar = -0.2
+far_l = -0.5
+far_r = 0.5
+n_ticks = 7
+bar_len = far_r - far_l
+stxt_up = 0.2 
+stxt_dict = {
+    'fr': ['Peu', 'Beaucoup'],
+    'en': ['Not at all', 'Very much']
+}
 
 # for rewarded sequence presentation
 rw_img_size = 0.2
@@ -124,7 +146,7 @@ rw_hl_color = '#D4AF37'
 flick_freq = 1 # Hz
 t_reward_info = 15
 
-# params for additional_q.py
+# params for the bonus question
 bq_img_size = 0.1
 bq_hl_size = bq_img_size + 0.001
 
