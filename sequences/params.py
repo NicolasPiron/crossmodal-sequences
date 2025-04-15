@@ -9,6 +9,7 @@ output_dir = Path("data/output")
 bg_fn = Path(f"{input_dir}/background/background2.jpg")
 stim_bg_fn = Path(f"{input_dir}/background/stim_bg.png")
 sound0_fn = Path(f'{input_dir}/sounds/reward.mp3')
+snd_endPause_fn = Path(f'{input_dir}/sounds/end_pause.mp3')
 fix_img_fn = Path(f"{input_dir}/fix/fix.png")
 q_reward_fn = [Path(f'{input_dir}/sounds/reward{i}.mp3') for i in range(1, 4)]
 instr_fnames = {
@@ -95,8 +96,8 @@ seq_structures = {
 
 # sequence presentation timings
 isi_dur = 1.5
-stim_dur = 0.3 # 0.55s in the data? 
-jitter = 0 # 0.05 # TODO: change to shorter value
+stim_dur = 0.3 # + 50 ms in the actual presentation
+jitter = 0.05
 
 # params for the in-task questions
 # TODO: maybe use frame rate to calculate the time

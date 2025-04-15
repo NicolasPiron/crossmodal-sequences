@@ -150,13 +150,50 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
             question_mod_org=question_mod_org
         )
     
-    if tools['tracker']['block_id'] < 4: # break for the first 3 blocks, then another longer break is proposed
-        post_block_break(tools)
+    end_block_break_quest(tools)
+    
     logger = tools['logger']
     logger.info(f'Block {tools["tracker"]["block_id"]} completed successfully.')
     logger.info('========== End of block ==========')
 
     return tools
+
+def end_block_break_quest(tools):
+     
+    # TODO: first questions about vigilance
+    if tools['tracker']['block_id'] < 4: # break for the first 3 blocks, then another longer break is proposed
+        post_block_break(tools)
+    # TODO: ask what they were thinking about
+
+
+def post_block_break(tools):
+    ''' Function to present a break between blocks. Returns nothing. '''
+    win = tools['win']
+    background = tools['background']
+    logger = tools['logger']
+    pport = tools['pport']
+    block_id = tools['tracker']['block_id']
+
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
+    instructions = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0.55),
+        height=pm.text_height,
+        color='black',
+        units='norm'
+    ) 
+
+    # log and triggers before and after break
+    logger.info(f'block {block_id} break start')
+    background.draw()
+    instructions.draw()
+    win.callOnFlip(pport.signal, pm.triggers['misc']['block_pause'])
+    win.flip()
+    core.wait(pm.t_post_block)
+    pport.signal(pm.triggers['misc']['block_endpause'])
+    logger.info(f'block {block_id} break stop')
+    return
 
 def handle_questioning(tools, amodal_sequences, trial_seq_org, question_mod_org):
     ''' Asks 3 questions and give feedbacks for a given trial. Returns the updated tracker.
@@ -224,33 +261,6 @@ def handle_questioning(tools, amodal_sequences, trial_seq_org, question_mod_org)
     tools['tracker'] = tracker
     return tools
 
-def post_block_break(tools):
-    ''' Function to present a break between blocks. Returns nothing. '''
-    win = tools['win']
-    background = tools['background']
-    logger = tools['logger']
-    pport = tools['pport']
-    block_id = tools['tracker']['block_id']
-
-    text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
-    instructions = visual.TextStim(
-        win=tools['win'],
-        text=text,
-        pos=(0, 0.55),
-        height=pm.text_height,
-        color='black',
-        units='norm'
-    ) 
-
-    # log and triggers before and after break
-    logger.info(f'block {block_id} break start')
-    background.draw()
-    instructions.draw()
-    win.callOnFlip(pport.signal, pm.triggers['misc']['block_pause'])
-    win.flip()
-    core.wait(pm.t_post_block)
-    pport.signal(pm.triggers['misc']['block_endpause'])
-    logger.info(f'block {block_id} break stop')
 
 def initialize_run(debugging):
     ''' Initializes a run. Creates the output dir, set or get the seed to control randomization and 
@@ -882,6 +892,8 @@ def post_run_break(tools, pause_i):
     win = tools['win']
     background = tools['background']
 
+    # sound indicating the end of the break
+    end_sound = sound.Sound(pm.snd_endPause_fn)
     # intructions
     text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
     instructions = visual.TextStim(
@@ -900,8 +912,12 @@ def post_run_break(tools, pause_i):
     instructions.draw()
     win.callOnFlip(pport.signal, pm.triggers['misc']['run_pause'])
     win.flip()
-    core.wait(pm.t_post_run) # 90s
-    # TODO: add little sound to indicate the end of the break
+    core.wait(pm.t_post_run-1) # 90s
+    background.draw()
+    instructions.draw()
+    win.callOnFlip(end_sound.play)
+    win.flip()
+    core.wait(1) # wait for the sound to finish
     pport.signal(pm.triggers['misc']['run_endpause'])
     logger.info(f'post run break {pause_i} end')
 
