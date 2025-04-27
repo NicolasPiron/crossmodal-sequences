@@ -9,4 +9,3 @@
 ## stimuli :
 - soften the diff between background and image background.
 - finalize the last stims
-- photodiode

@@ -1,6 +1,27 @@
 from psychopy import visual, core, event
 import warnings
 
+
+def end_expe(tools):
+    win = tools['win']
+    logger = tools['logger']
+    logger.info(f"=============== Run {tools['exp_info']['run']} gracefully closed ===============")
+    win.close()
+    core.quit()
+
+def novov_trigger(pport, trig1, trig2, delay=10):
+    ''' Function to send triggers to the parallel port with no overlap.'''
+    pport.signal(trig1)
+    core.wait((delay+2)/1000)
+    pport.signal(trig2)
+    return
+
+def clear_stuff(win):
+    ''' Remove keyboard events and clear the window '''
+    win.flip()
+    core.wait(0.5)
+    event.clearEvents()
+
 def wait_frate(win, objects:list, frate:int, t:int):
     ''' Function to wait for a certain number of frames '''
     # Calculate the number of frames to wait

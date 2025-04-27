@@ -207,7 +207,7 @@ def ask_all_seq(tools:dict):
     win = tools['win']
     background = tools['background']
     logger = tools['logger']
-    win.mouseVisible = True
+    #win.mouseVisible = False
 
     if logger:
         logger.info('=============== Beginning of bonus questions ===============')
@@ -376,10 +376,7 @@ def display_rwd_amt(tools, reward_amount):
 
     if logger:
         logger.info("=============== End of bonus question ===============")
-        logger.info(f"=============== Run {tools['exp_info']['run']} gracefully closed ===============")
-    
-    win.close()
-    core.quit()
+
     return
 
 def bonus_question(tools):

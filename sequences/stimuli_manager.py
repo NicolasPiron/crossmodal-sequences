@@ -27,27 +27,20 @@ def get_reward_info(two_run_org:Dict[str, Dict[str, List[str]]], seed:int, n:int
 
     return reward_info
 
-def distribute_tones(tone_names:List[str], seq_names:List[str])-> Dict[str, str]:
-    ''' Attribute a tone to each sequence. This is done randomly for each participant.'''
-    random.shuffle(tone_names)
-    tone_dict = {}
-    for i, seq in enumerate(seq_names):
-        tone_dict[seq] = tone_names[i]
-    return tone_dict
-
-def get_tone_name(input_dir:str)-> List[str]:
-    ''' '''
-    ...
+def distribute_snd(seq_names:List[str], snd_dir:str, seed:int)-> Dict[str, str]:
+    ''' Attribute a sound path to each sequence. This is done randomly for each participant.'''
+    random.seed(seed)
+    sounds = sorted(glob.glob(os.path.join(snd_dir, '*.mp3')))
+    random.shuffle(sounds)
+    random.shuffle(seq_names)
+    snd_mapping = {name: snd for name, snd in zip(seq_names, sounds)}
+    return snd_mapping
 
 def set_seed(subject_id:str)-> int:
     ''' Write a seed in a file and return it. The seed is based on the subject ID'''
     seed = int(subject_id)
     random.seed(seed)
     return seed
-
-def jitter_isi(value:float=0.2)-> float:
-    '''Return a random jittered inter-stimulus interval'''
-    return random.uniform(-value, value)
 
 def get_cat_from_stim(stim: str)-> str:
     '''Extract the category from a stimulus path'''
@@ -532,6 +525,30 @@ def move_slider(slider, slider_positions:List[float], y:float, current_pos:int, 
     slider.pos = (pos, y)
     return current_pos
 
+def rotate(w_imgs:list, current_idx:int):
+    ''' Rotate the wheel images to the next one'''
+    if current_idx == len(w_imgs)-1:
+        current_idx = 0
+    else:
+        current_idx += 1
+    return current_idx
+
+def display_wheel(tools, wclock, rclock, tw, tr, wh_imgs, instr):
+    ''' Display spinning wheel for tw seconds, rotating every tr seconds.'''
+    current_idx = 0
+    rclock.reset()
+    wclock.reset()
+    while wclock.getTime() < tw:
+        t = rclock.getTime()
+        if t > tr:
+            current_idx = rotate(wh_imgs, current_idx)
+            rclock.reset()
+        tools['background'].draw()
+        instr.draw()
+        wh_imgs[current_idx].draw()
+        tools['win'].flip()
+    return
+
 """
 ********   TEST FUNCTIONS   *********
 *                                     *
@@ -630,6 +647,12 @@ def test_generate_sequences(input_dir, seq_structures):
 *      /       \        *
 *************************   
 '''
+
+
+def jitter_isi(value:float=0.2)-> float:
+    '''Return a random jittered inter-stimulus interval'''
+    # not used anymore
+    return random.uniform(-value, value)
 
 # was used when I needed to distribute 2*6 sequences. Current version works for 12 unique sequences. 
 def old_generate_run_org(input_dir, seq_structures) -> dict:

@@ -3,9 +3,12 @@ from pathlib import Path
 import platform
 
 os_name = platform.system()
-# paths
+# directories
 input_dir = Path("data/input")
 output_dir = Path("data/output")
+spin_wheel_dir = Path(f"{input_dir}/spin_wheel")
+snd_stim_dir = Path(f"{input_dir}/sounds/seq_sounds")
+# file names
 bg_fn = Path(f"{input_dir}/background/background2.jpg")
 stim_bg_fn = Path(f"{input_dir}/background/stim_bg.png")
 sound0_fn = Path(f'{input_dir}/sounds/reward.mp3')
@@ -24,10 +27,13 @@ instr_fnames = {
     'instr_stimpres3_fn' : 'instr_stim_pres3.txt',
     'instr_pause_fn': 'instr_pause.txt', 
     'instr_reward_fn': 'instr_reward.txt',
+    'instr_tmr1': 'instr_tmr1.txt',
+    'instr_tmr2': 'instr_tmr2.txt',
     'quest_vigi_fn': 'quest_vigilance.txt',
     'quest_focus_fn': 'quest_focus.txt',
     'quest_think_fn': 'quest_think.txt',
 }
+# mapping of keys to numbers for the response pad
 key_dict = {
     'left' : '1',
     'confirm' : '2',
@@ -40,6 +46,7 @@ key_dict = {
 # stim config
 t = 0.001 # speed of text presentation
 #seed = 42
+frate = 120 
 bg_color = (255, 255, 255)
 text_height = 0.08
 img_size = 0.4
@@ -102,7 +109,7 @@ seq_structures = {
 # sequence presentation timings
 isi_dur = 1.5
 stim_dur = 0.3 # + 50 ms in the actual presentation
-jitter = 0.05
+jitter = 0.05 
 
 # params for the in-task questions
 # TODO: maybe use frame rate to calculate the time
@@ -113,12 +120,12 @@ t_act = 2
 t_fb = 1
 t_iqi = 0.5
 t_post_q = 5
-t_post_block = 30 # To adjust after discussion
-t_post_run = 1
+
 q_img_size = 0.2
 q_slot_size = q_img_size + 0.001
 hl_size = q_slot_size + 0.001
 y_pos = 0.25
+
 max_points = 9
 
 # for the questionnaire after each block
@@ -134,9 +141,23 @@ n_ticks = 7
 bar_len = far_r - far_l
 stxt_up = 0.2 
 stxt_dict = {
-    'fr': ['Peu', 'Beaucoup'],
-    'en': ['Not at all', 'Very much']
+    'fr': {
+        'vigi':['somnolent.e', 'éveillé.e'],
+        'focus': ['distrait.e', 'concentré.e'],
+        'think': ['autre chose', 'séquences'],
+    },
+    'en': {
+        'vigi': ['drowsy', 'awake'],
+        'focus': ['distracted', 'focused'],
+        'think': ['other things', 'sequences'],
+    },
 }
+# end block pause
+t_post_block = 0.1 # To adjust after discussion 30
+t_rotate = 2 # seconds
+
+# end of run pause
+t_post_run = 0.1 # 90
 
 # for rewarded sequence presentation
 rw_img_size = 0.2
@@ -144,7 +165,7 @@ rw_hl_size = rw_img_size + 0.025
 # rw_hl_color = (212, 175, 55) # gold
 rw_hl_color = '#D4AF37'
 flick_freq = 1 # Hz
-t_reward_info = 15
+t_reward_info = 0.1 # seconds
 
 # params for the bonus question
 bq_img_size = 0.1
@@ -152,6 +173,11 @@ bq_hl_size = bq_img_size + 0.001
 
 # how much points rewarded (in chf)
 reward_value = 0.5
+
+# params for the TMR
+t_tmr = 120
+t_tmr_delay = 10
+tmr_jitter = 1
 
 # trigger mapping :
 # - trig1 : sequence + position -> between 11 and 126
@@ -203,6 +229,18 @@ trig3 = {
     'run_pause': 209,
     'run_endpause': 210,
     'reward_info': 211,
+    'tmr_A':221,
+    'tmr_B':222,
+    'tmr_C':223,
+    'tmr_D':224,
+    'tmr_E':225,
+    'tmr_F':226,
+    'tmr_G':227,
+    'tmr_H':228,
+    'tmr_I':229,
+    'tmr_J':230,
+    'tmr_K':231,
+    'tmr_L':232,
 }
 
 triggers = {

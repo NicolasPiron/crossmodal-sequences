@@ -1,4 +1,6 @@
 import os
+import sys
+import shutil
 import logging
 import glob
 import time
@@ -40,6 +42,9 @@ def execute_run(debugging=False):
         amodal_sequences, question_mod_org, first_seq_mod_org = setup_sequence_distribution(tools)
     except Exception as exc:
         fl.log_exceptions(f"An error occurred during sequence generation: {exc}", logger, tools['win'])
+
+    sound_org = sm.distribute_snd(seq_names=list(amodal_sequences.keys()), snd_dir=pm.snd_stim_dir, seed=tools['seed']) # get the sound organization for the sequences
+    tools['sound_org'] = sound_org 
     two_run_org = sm.generate_run_org(amodal_sequences, seed=tools['seed']) # get the global oorganization of sequences for the two runs
     run_org = two_run_org[f'run{int(exp_info["run"])}'] # get the organization of sequences for the current run
 
@@ -61,6 +66,7 @@ def execute_run(debugging=False):
     logger.info(f'run reward info: {reward_info}')
     logger.info(f'question mod org: {question_mod_org}')
     logger.info(f'first seq mod org: {first_seq_mod_org}')
+    logger.info(f'sound organization: {sound_org}')
     present_instructions(tools) # Present instructions 
 
     # if the user entered a block id != 1, we skip the first blocks
@@ -126,17 +132,19 @@ def initialize_run(debugging):
     logfn = f"{out_dir}/sub-{exp_info['ID']}_run-{exp_info['run']}_cmseq-logs-{datetime.now().strftime('%Y%m%d-%H%M')}.log"
     os.makedirs(out_dir, exist_ok=True)
 
-    if len(os.listdir(out_dir)) > 10: # check if the output directory is not filled with old files
+    fn_n_dir = os.listdir(out_dir)
+    if len(fn_n_dir) > 10: # check if the output directory is not filled with old files
         if not debugging:
+            #print('output dir not empty, overwriting')
             print(f"--- Output directory {out_dir} is not empty, exiting... ---")
-            quit()
+            sys.exit()
         else:
-            files = glob.glob(f"{out_dir}/*")
-            if exp_info['run'] == '01':
-                if f'{out_dir}/seed.txt' in files:
-                    files.remove(f'{out_dir}/seed.txt') # keep the seed file
-                for f in files:
-                    os.remove(f)
+            for f in fn_n_dir:
+                full_path = os.path.join(out_dir, f)
+                if os.path.isfile(full_path):
+                    os.remove(full_path)
+                elif os.path.isdir(full_path):
+                    shutil.rmtree(full_path) 
 
     # had to add this because the waitKeys function was not working with the version of Ubuntu on the stim PC
     if platform.system() == 'Linux':
@@ -178,10 +186,6 @@ def initialize_run(debugging):
     # tone_mapping = sm.get_pure_tone_dict() #TODO : add this to the params file
     win_dict = get_win_dict()
     win_dict['win'].mouseVisible = False
-    if platform.system() == 'Windows' or platform.system() == 'Linux':
-        frate = win_dict['win'].getActualFrameRate()
-    else:
-        frate = 120
 
     # define the tracker to keep track of where we are in the experiment
     tracker = { 
@@ -211,8 +215,6 @@ def initialize_run(debugging):
         'out_dir': out_dir,
         'starting_point': starting_point,
         'tracker': tracker,
-        # 'tone_mapping': tone_mapping,
-        'frate': frate,
         'keyboard': keyboard,
         'adapt_waitKeys': adapt_waitKeys,
     }
@@ -254,6 +256,7 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
 
     for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
         tools['tracker']['trial_id'] = j
+        seq_sounds = {seq_n:sound.Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
         trial_seq_org, trial_mod_org = initialize_trial_sequences(
             tools=tools,
             first_seq_mod_org=first_seq_mod_org,
@@ -263,7 +266,8 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
             tools=tools,
             amodal_sequences=amodal_sequences, 
             trial_seq_org=trial_seq_org, 
-            trial_mod_org=trial_mod_org
+            trial_mod_org=trial_mod_org,
+            seq_sounds=seq_sounds,
         )
                             
         tools = handle_questioning(
@@ -302,9 +306,9 @@ def initialize_block(tools, run_org):
     logger.info(f'sequences: {chosen_sequences}')
 
     if tools['exp_info']['lang'] == 'fr':
-        txt = f"Bloc {tracker['block_id']} \nAttendez le feu vert de l'experimentateur, puis appuyez sur la touche ESPACE pour commencer!"
+        txt = f"Bloc {tracker['block_id']} \nAttendez le feu vert de l'experimentateur, puis appuyez sur le bouton central pour commencer!"
     else:
-        txt = f"Block {tracker['block_id']} \nWait for the experimenter's signal, then press the SPACE key to start!"
+        txt = f"Block {tracker['block_id']} \nWait for the experimenter's signal, then press the middle key to start!"
     block_info = visual.TextStim(win=win,
         text=txt,
         pos=(0, 0),
@@ -325,10 +329,10 @@ def end_block_break_quest(tools):
     
     logger = tools['logger']
     block_id = tools['tracker']['block_id']
-    st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]
 
     # ask how vigilant and focused questions
     vigi_text = it.get_txt(tools['exp_info']['lang'], 'quest_vigi_fn')
+    st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]['vigi'] 
     logger.info('Asking the vigilance question')
     vigi_resp = present_questionnaire(
         tools=tools, 
@@ -340,6 +344,7 @@ def end_block_break_quest(tools):
     fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
 
     focus_text = it.get_txt(tools['exp_info']['lang'], 'quest_focus_fn')
+    st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]['focus'] 
     logger.info('Asking the focus question')
     focus_resp = present_questionnaire(
         tools=tools, 
@@ -354,7 +359,8 @@ def end_block_break_quest(tools):
         post_block_break(tools)
         # ask what was the participant thinking about during break
         think_text = it.get_txt(tools['exp_info']['lang'], 'quest_think_fn')
-        logger.info('Asking the focus question')
+        st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]['think'] 
+        logger.info('Asking the think question')
         think_resp = present_questionnaire(
             tools=tools, 
             text=think_text,
@@ -463,12 +469,13 @@ def post_block_break(tools):
     ''' Function to present a break between blocks. Returns nothing. '''
     win = tools['win']
     background = tools['background']
+    aspect_ratio = tools['aspect_ratio']
     logger = tools['logger']
     pport = tools['pport']
     block_id = tools['tracker']['block_id']
 
     text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
-    instructions = visual.TextStim(
+    instr = visual.TextStim(
         win=tools['win'],
         text=text,
         pos=(0, 0.5),
@@ -477,13 +484,23 @@ def post_block_break(tools):
         units='norm'
     ) 
 
+    # load spinning wheel images 
+    w_fns = sorted(glob.glob(f'{pm.spin_wheel_dir}/w*.png'))
+    w_imgs = [
+        visual.ImageStim(win, image=w_fn, size=(0.2, 0.2*aspect_ratio), units="norm")
+        for w_fn in w_fns
+    ]
+    wclock = core.Clock()
+    rclock = core.Clock()
     # log and triggers before and after break
     logger.info(f'block {block_id} break start')
     background.draw()
-    instructions.draw()
+    instr.draw()
     win.callOnFlip(pport.signal, pm.triggers['misc']['block_pause'])
     win.flip()
-    core.wait(pm.t_post_block)
+
+    sm.display_wheel(tools, wclock, rclock, pm.t_post_block, pm.t_rotate, w_imgs, instr)
+
     pport.signal(pm.triggers['misc']['block_endpause'])
     logger.info(f'block {block_id} break stop')
     return
@@ -495,12 +512,17 @@ def post_run_break(tools, pause_i):
     logger = tools['logger']
     win = tools['win']
     background = tools['background']
+    aspect_ratio = tools['aspect_ratio']
+
+    # for the questionnaire about thinking about sequences
+    think_text = it.get_txt(tools['exp_info']['lang'], 'quest_think_fn')
+    st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]['think'] 
 
     # sound indicating the end of the break
     end_sound = sound.Sound(pm.snd_endPause_fn)
     # intructions
     text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
-    instructions = visual.TextStim(
+    instr = visual.TextStim(
         win=tools['win'],
         text=text,
         pos=(0, 0.55),
@@ -508,22 +530,95 @@ def post_run_break(tools, pause_i):
         color='black',
         units='norm'
     ) 
-
-    # TODO: display a moving object so the participant doesn't phase out
+    # load spinning wheel images 
+    w_fns = sorted(glob.glob(f'{pm.spin_wheel_dir}/w*.png'))
+    w_imgs = [
+        visual.ImageStim(win, image=w_fn, size=(0.2, 0.2*aspect_ratio), units="norm")
+        for w_fn in w_fns
+    ]
+    wclock = core.Clock()
+    rclock = core.Clock()
     # log and triggers before and after break
     logger.info(f'post run break {pause_i} start')
     background.draw()
-    instructions.draw()
+    instr.draw()
     win.callOnFlip(pport.signal, pm.triggers['misc']['run_pause'])
     win.flip()
-    core.wait(pm.t_post_run-1) # 90s
+
+    sm.display_wheel(tools, wclock, rclock, pm.t_post_run, pm.t_rotate, w_imgs, instr)
+
     background.draw()
-    instructions.draw()
+    instr.draw()
     win.callOnFlip(end_sound.play)
     win.flip()
     core.wait(1) # wait for the sound to finish
     pport.signal(pm.triggers['misc']['run_endpause'])
     logger.info(f'post run break {pause_i} end')
+    logger.info('Asking the think question')
+    think_resp = present_questionnaire(
+        tools=tools, 
+        text=think_text,
+        scale_text1=st1, 
+        scale_text2=st2 
+    )
+    logger.info(f"Post run pause {pause_i} thinking response: {think_resp}")
+    return
+
+def play_tmr(tools):
+    ''' Play the targeted memory reactivation sounds. Returns nothing. '''
+    # TODO : add a waitkeys. 
+    pport = tools['pport']
+    logger = tools['logger']
+    win = tools['win']
+    background = tools['background']
+    adapt_waitKeys = tools['adapt_waitKeys']
+
+    # load instruction part
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_tmr1')
+    instr1 = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0),
+        height=pm.text_height,
+        color='black',
+        units='norm'
+    ) 
+    # load tmr part
+    s_dict = {seq_n:sound.Sound(fn) for seq_n, fn in tools['sound_org'].items()}
+    text = it.get_txt(tools['exp_info']['lang'], 'instr_tmr2')
+    instr2 = visual.TextStim(
+        win=tools['win'],
+        text=text,
+        pos=(0, 0),
+        height=pm.text_height,
+        color='black',
+        units='norm'
+    ) 
+
+    # flow
+    background.draw()
+    instr1.draw()
+    win.flip()
+    adapt_waitKeys(keyList=[pm.key_dict['confirm']])
+
+    background.draw()
+    instr2.draw()
+    win.flip()
+    logger.info('Starting TMR')
+    core.wait(pm.t_tmr_delay)
+
+    for seq_n, snd in s_dict.items():
+        logger.info(f"playing {tools['sound_org'][seq_n]} for sequence {seq_n}")
+        jitter = random.choice([-pm.tmr_jitter, 0, pm.tmr_jitter])
+        win.callOnFlip(pport.signal, pm.triggers['misc'][f'tmr_{seq_n}'])        
+        win.callOnFlip(snd.play)
+        background.draw()
+        instr2.draw()
+        win.flip()
+        core.wait(pm.t_tmr_delay+jitter)
+
+    logger.info('TMR successfully done')
+    return
 
 def handle_questioning(tools, amodal_sequences, trial_seq_org, question_mod_org):
     ''' Asks 3 questions and give feedbacks for a given trial. Returns the updated tracker.
@@ -607,9 +702,9 @@ def present_instructions(tools):
         adapt_waitKeys(keyList=[pm.key_dict['confirm']])
 
     if exp_info['lang'] == 'fr':
-        txt = "Nous allons présenter les instructions.\nAppuyez sur la touche ESPACE pour continuer."
+        txt = "Nous allons présenter les instructions.\nAppuyez sur le bouton central pour continuer."
     else:
-        txt = "We are going to present the instructions.\nPress the SPACE key to continue."
+        txt = "We are going to present the instructions.\nPress the middle key to continue."
     if exp_info['run'] == '01': # only present the instructions at the first run
         fl.type_text(
             text=txt,
@@ -806,13 +901,13 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     background.draw()
     cue_viz.draw()
-    win.callOnFlip(novov_trigger,pport=pport, trig1=triggers1[0], trig2=triggers2[0], delay=10)
+    win.callOnFlip(fl.novov_trigger,pport=pport, trig1=triggers1[0], trig2=triggers2[0], delay=10)
     win.flip()
     sm.fade_out(tools, cue_viz, clock=fade_clock, f_dur=t_viz_cue)
 
     background.draw()
     target_viz.draw()
-    win.callOnFlip(novov_trigger,pport=pport, trig1=triggers1[1], trig2=triggers2[1], delay=10)
+    win.callOnFlip(fl.novov_trigger,pport=pport, trig1=triggers1[1], trig2=triggers2[1], delay=10)
     win.flip()
     core.wait(t_viz_target)
 
@@ -951,7 +1046,7 @@ def provide_trial_feedback(tools, tracker):
     core.wait(t_post_q)
     return
 
-def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
+def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org, seq_sounds):
     ''' Present the 6 sequences of a trial before the questions. Returns nothing. 
     Adapted so it can skip n sequences if the user wants to start from a specific sequence.'''
     logger = tools['logger']
@@ -969,24 +1064,28 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org):
         modality = trial_mod_org[k-1]
         sequence_name = trial_seq_org[k-1]
         sequence = amodal_sequences[sequence_name]
+        snd_path = tools['sound_org'][sequence_name] # for the logger only
+        snd = seq_sounds[sequence_name]
         stims = sm.get_stims(pm.input_dir, sequence, modality, lang=tools['exp_info']['lang'])
         logger.info(f'sequence number: {k}')
         logger.info(f'sequence name: {sequence_name}')
         logger.info(f'sequence modality: {modality}')
-        present_stimuli(tools, sequence, sequence_name, stims, modality)
+        logger.info(f'sound name: {snd_path}')
+        present_stimuli(tools, sequence, sequence_name, stims, modality, snd)
     return
 
-def present_stimuli(tools, sequence, sequence_name, stims, modality):
+def present_stimuli(tools, sequence, sequence_name, stims, modality, snd):
     ''' Present the 6 stimuli of a sequence. Returns nothing. '''
     debugging = tools['debugging']
+    jitters = np.linspace(-pm.jitter, pm.jitter, pm.n_seq)
+    random.shuffle(jitters)
     for i, stim in enumerate(stims):
         if debugging:
             continue
-        present_stimulus(tools, sequence, sequence_name, i, stim, modality)
-
+        present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitters[i], snd)
     return
 
-def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO: add sound
+def present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitter, snd): 
     ''' Present a single stimulus. Returns nothing. '''
     
     debugging = tools['debugging']
@@ -995,9 +1094,9 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
     win = tools['win']
     aspect_ratio = tools['aspect_ratio']
     background = tools['background']
-    frate = tools['frate']
-    t_stim = pm.stim_dur # where should the jitter be added? Stim or ISI?
-    t_isi = pm.isi_dur + sm.jitter_isi(pm.jitter)
+
+    t_stim = pm.stim_dur 
+    t_isi = pm.isi_dur + jitter
     if debugging:
         t_stim = 0.01
         t_isi = 0.01
@@ -1039,18 +1138,20 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality): # TODO:
     logger.info(f'stimulus category: {stim_cat}')
     logger.info(f'stimulus path: {stim}')
 
-    win.callOnFlip(novov_trigger,pport=pport, trig1=trig1, trig2=trig2, delay=10)
+    win.callOnFlip(fl.novov_trigger,pport=pport, trig1=trig1, trig2=trig2, delay=10)
+    win.callOnFlip(snd.play) # play sound at the beginning of the stimulus presentation
     win.flip()
-    #sound.play()
     t1 = time.time()
-    # core.wait(t_stim)
-    fl.wait_frate(win, [background, rect, stim_image], frate=frate, t=t_stim) # wait for the frame rate to be reached
+    core.wait(t_stim)
+    #fl.wait_frate(win, [background, rect, stim_image], frate=pm.frate, t=t_stim) # wait for the frame rate to be reached
     print(f"stimulus {i+1} presented in {time.time()-t1:.5f} seconds")
-    # background.draw()
-    # stim_image.draw()
-    # win.flip()
-    # core.wait(t_isi)
-    fl.wait_frate(win, [background, fix_cross], frate=frate, t=t_isi)
+    background.draw()
+    fix_cross.draw()
+    win.flip()
+    t3 = time.time()
+    core.wait(t_isi)
+    #fl.wait_frate(win, [background, fix_cross], frate=pm.frate, t=t_isi)
+    print(f"stimulus {i+1} ISI in {time.time()-t3:.5f} seconds")
     return
 
 def present_rewarded_sequences(tools:dict):
@@ -1074,8 +1175,8 @@ def present_rewarded_sequences(tools:dict):
         first_stim_paths[seq_name] = first_stim
 
     # construct the grid to store the 6 images
-    xs = [-0.55, 0, 0.55]*2
-    y = .45
+    xs = [-0.5, 0, 0.5]*2
+    y = .4
     ys = [y]*3 + [-y]*3
 
     # define the objects to be presented
@@ -1140,28 +1241,19 @@ def present_rewarded_sequences(tools:dict):
     logger.info('Rewarded sequences presented successfully')
     return 
 
-def novov_trigger(pport, trig1, trig2, delay=10):
-    ''' Function to send triggers to the parallel port with no overlap.'''
-    pport.signal(trig1)
-    core.wait((delay+2)/1000)
-    pport.signal(trig2)
-    return
 
 #########################
 # highest level functions
 
-def clear_stuff(win):
-    win.flip()
-    core.wait(0.5)
-    event.clearEvents()
-
 def pipeline(debugging=False):
     tools = execute_run(debugging=debugging)
-    clear_stuff(tools['win'])
     post_run_break(tools, pause_i=1)
     present_rewarded_sequences(tools)
     post_run_break(tools, pause_i=2)
     bonus_question(tools)
+    if tools['exp_info']['run'] == '02':
+        play_tmr(tools)
+    fl.end_expe(tools)
 
 def test_pipeline(debugging=True):
     tools = execute_run(debugging)
