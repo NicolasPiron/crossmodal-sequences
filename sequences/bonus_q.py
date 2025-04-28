@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from psychopy import visual, event
+from psychopy import visual #, event
 from sequences import stimuli_manager as sm
 from sequences import params as pm
 
@@ -28,19 +28,21 @@ def read_seq_file(s_id, r_id, seq_name):
 
 # functions for the interactive slot filling task
 
-def check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path, txt):
+def check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path, txt, key_map, adapt_waitKeys):
+    conf = key_map['confirm']
+    rem = key_map['remove']
     if occ_count == 5:
-        resp = confirm_slot_filling(start_item_img, images, win, background, txt)
-        if resp[0] == "space": # TODO: change this key. Should be defined in bonus_question.py and given as an argument here
+        resp = confirm_slot_filling(start_item_img, images, win, background, txt, adapt_waitKeys, resp_keys=[conf, rem])
+        if resp[0] == conf: 
             running = save_slot_data(start_item_img, slots, out_path)
-        elif resp[0] == "escape":
+        elif resp[0] == rem:
             reset_image_positions(images, slots)
             running = True
     else:
         running = True
     return running
 
-def confirm_slot_filling(start_item_img, images, win, background, txt):
+def confirm_slot_filling(start_item_img, images, win, background, txt, adapt_waitKeys, resp_keys):
     validate = visual.TextStim(
         win,
         text=txt,
@@ -54,7 +56,7 @@ def confirm_slot_filling(start_item_img, images, win, background, txt):
     start_item_img.draw()
     validate.draw()
     win.flip()
-    resp = event.waitKeys(keyList=["escape", "space"])
+    resp = adapt_waitKeys(keyList=resp_keys)
     return resp
 
 def reset_image_positions(images, slots):

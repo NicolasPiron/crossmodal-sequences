@@ -42,6 +42,15 @@ key_dict = {
     'up' : '4',
     'down' : '5',
 }
+# for the bonus question
+key_bq = {
+    'left':'1',
+    'right':'2',
+    'up':'7',
+    'down':'8',
+    'confirm':'4',
+    'remove':'5',
+}
 
 # stim config
 t = 0.001 # speed of text presentation
@@ -153,11 +162,11 @@ stxt_dict = {
     },
 }
 # end block pause
-t_post_block = 0.1 # To adjust after discussion 30
+t_post_block = 30 # To adjust after discussion 30
 t_rotate = 2 # seconds
 
 # end of run pause
-t_post_run = 0.1 # 90
+t_post_run = 90 # 90
 
 # for rewarded sequence presentation
 rw_img_size = 0.2

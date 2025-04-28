@@ -1,6 +1,8 @@
 from psychopy import visual, event, core
+from psychopy.hardware.keyboard import Keyboard
 from pathlib import Path
 import random
+import platform
 import glob
 import os
 import pandas as pd
@@ -135,6 +137,7 @@ def ask_sequence(start_item, seq_name, amodal_sequences, tools):
     grid_cols = 6  # 6 columns as in gen_img_positions
     selected_image = None  # Track the currently selected image
     running = True
+    direct_d = {pm.key_bq[key]:key for key in ['left', 'right', 'up', 'down']} # invert key values and subselect directions
 
     while running:
         background.draw()
@@ -159,16 +162,27 @@ def ask_sequence(start_item, seq_name, amodal_sequences, tools):
 
         keys = event.getKeys()
         for key in keys:
-            if key in ["up", "down", "left", "right"]:
-                grid_index = bq.move_cursor(grid_index, key, len(images), grid_cols, images)
-            elif key == "space":
+            if key in list(direct_d.keys()): 
+                grid_index = bq.move_cursor(grid_index, direct_d[key], len(images), grid_cols, images)
+            elif key == pm.key_bq['confirm']:
                 selected_image = bq.handle_select_or_place(images, grid_index, selected_image, slots)
-            elif key in ["backspace", "delete"]:
-                bq.handle_undo(images)
+            # elif key == pm.key_bq['remove']: # TODO: fix it
+            #     bq.handle_undo(images)
         occ_count = bq.count_occupied_slots(slots)
         txt_instr3 = it.get_txt(lang, 'instr_bonus3_fn')
         # check if the participant has placed all images and if so, save the data
-        running = bq.check_slot_filling(start_item_img, images, slots, occ_count, win, background, out_path, txt_instr3)
+        running = bq.check_slot_filling(
+            start_item_img, 
+            images, 
+            slots, 
+            occ_count, 
+            win, 
+            background, 
+            out_path, 
+            txt_instr3,
+            key_map=pm.key_bq,
+            adapt_waitKeys=tools['adapt_waitKeys']
+        )
 
         # if "escape" in event.getKeys():
         #     running = False
@@ -385,6 +399,15 @@ def bonus_question(tools):
     display_rwd_amt(tools, rwd)
 
 if __name__ == "__main__":
+
+    if platform.system() == 'Linux':
+        keyboard = Keyboard()
+        keyboard.start()
+        adapt_waitKeys = keyboard.waitKeys
+    else:
+        keyboard = None
+        adapt_waitKeys = event.waitKeys
+
     subject_id = input('Enter subject ID: ')
     run_id = input('Enter run ID: ')
     win_dict = get_win_dict()
@@ -398,8 +421,9 @@ if __name__ == "__main__":
         'background': win_dict['background'],
         'aspect_ratio': win_dict['aspect_ratio'],
         'logger': None,
+        'adapt_waitKeys':adapt_waitKeys,
     }
-    ask_all_seq(tools)
+    ask_all_seq(tools) 
     rwd, n_corr = cpt_reward_feedback(tools)
     display_rwd_amt(tools, rwd)
 

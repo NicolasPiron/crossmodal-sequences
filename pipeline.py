@@ -886,7 +886,18 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         image=stims[idx2],
         pos=(0, -pm.y_pos),
         size=(pm.q_img_size, pm.q_img_size * aspect_ratio),
-    ) 
+    )
+
+    # rectangle for photodiode
+    rect = visual.Rect(
+        win=win,
+        width=0.05,
+        height=0.05*aspect_ratio,
+        pos=(1, 1),
+        units='norm',
+        fillColor=(255, 255, 255),
+    )
+
     rt_clock = core.Clock()
     fade_clock = core.Clock()
     t_viz_cue = pm.t_viz_cue
@@ -901,12 +912,14 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
 
     background.draw()
     cue_viz.draw()
+    rect.draw()
     win.callOnFlip(fl.novov_trigger,pport=pport, trig1=triggers1[0], trig2=triggers2[0], delay=10)
     win.flip()
     sm.fade_out(tools, cue_viz, clock=fade_clock, f_dur=t_viz_cue)
 
     background.draw()
     target_viz.draw()
+    rect.draw()
     win.callOnFlip(fl.novov_trigger,pport=pport, trig1=triggers1[1], trig2=triggers2[1], delay=10)
     win.flip()
     core.wait(t_viz_target)
@@ -1116,7 +1129,8 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitter, 
         win=win,
         width=0.05,
         height=0.05*aspect_ratio,
-        pos=(0.92, 0.92),
+        pos=(1, 1),
+        units='norm',
         fillColor=(255, 255, 255),
     )
     
