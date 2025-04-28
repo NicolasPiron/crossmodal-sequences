@@ -137,7 +137,8 @@ def ask_sequence(start_item, seq_name, amodal_sequences, tools):
     grid_cols = 6  # 6 columns as in gen_img_positions
     selected_image = None  # Track the currently selected image
     running = True
-    direct_d = {pm.key_bq[key]:key for key in ['left', 'right', 'up', 'down']} # invert key values and subselect directions
+    direct_d = {pm.key_bq[key]:key for key in ['left', 'right', 'up', 'down']} # invert key values and subselect directions    
+    event.clearEvents()
 
     while running:
         background.draw()

@@ -29,6 +29,7 @@ instr_fnames = {
     'instr_reward_fn': 'instr_reward.txt',
     'instr_tmr1': 'instr_tmr1.txt',
     'instr_tmr2': 'instr_tmr2.txt',
+    'quest_ready_fn': 'quest_ready.txt',
     'quest_vigi_fn': 'quest_vigilance.txt',
     'quest_focus_fn': 'quest_focus.txt',
     'quest_think_fn': 'quest_think.txt',

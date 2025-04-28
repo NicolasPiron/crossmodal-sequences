@@ -329,7 +329,25 @@ def end_block_break_quest(tools):
     ''' Presents the small Likert scale questions at the end of the block + a break.'''
     
     logger = tools['logger']
+    win = tools['win']
+    background = tools['background']
     block_id = tools['tracker']['block_id']
+    adapt_waitKeys = tools['adapt_waitKeys']
+
+    # small waitkeys so the participant doesn't click automatically for the questionnaire
+    instr_txt = it.get_txt(tools['exp_info']['lang'], 'quest_ready_fn')
+    instr = visual.TextStim(win=win,
+        text=instr_txt,
+        pos=(0, 0),
+        font="Arial",
+        color='black', 
+        height=pm.text_height,
+        units='norm'
+    )
+    background.draw()
+    instr.draw()
+    win.flip()
+    adapt_waitKeys(keyList=[pm.key_dict['confirm']])
 
     # ask how vigilant and focused questions
     vigi_text = it.get_txt(tools['exp_info']['lang'], 'quest_vigi_fn')

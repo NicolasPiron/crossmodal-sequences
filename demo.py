@@ -49,7 +49,7 @@ def present_stimulus(tools, stim):
     t_isi = pm.isi_dur
 
     tools = {"logger": None} # No logger for the demo
-    fl.check_escape_or_break(tools)
+    fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
     stim_image = visual.ImageStim(
         win=win,
         image=stim,
@@ -172,7 +172,7 @@ def ask_trial_question(stims, tools):
         end_item=target_seq,
         rt_clock=rt_clock,
         global_clock=core.Clock(),
-        t_act=pm.t_act,
+        t_act=t_act,
         key_dict=pm.key_dict,
         trig_dict=pm.triggers
     )
