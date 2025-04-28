@@ -188,8 +188,7 @@ def ask_sequence(start_item, seq_name, amodal_sequences, tools):
         #     running = False
         
         core.wait(0.01) 
-        event.clearEvents()
-    
+    event.clearEvents()
     if logger:
         logger.info(f"Bonus question: sequence {seq_name} completed")
     
