@@ -256,7 +256,8 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
 
     for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
         tools['tracker']['trial_id'] = j
-        seq_sounds = {seq_n:sound.Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
+        #seq_sounds = {seq_n:sound.Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
+        seq_sounds = None
         trial_seq_org, trial_mod_org = initialize_trial_sequences(
             tools=tools,
             first_seq_mod_org=first_seq_mod_org,
@@ -519,7 +520,7 @@ def post_run_break(tools, pause_i):
     st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]['think'] 
 
     # sound indicating the end of the break
-    end_sound = sound.Sound(pm.snd_endPause_fn)
+    #end_sound = sound.Sound(pm.snd_endPause_fn)
     # intructions
     text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
     instr = visual.TextStim(
@@ -549,7 +550,7 @@ def post_run_break(tools, pause_i):
 
     background.draw()
     instr.draw()
-    win.callOnFlip(end_sound.play)
+    #win.callOnFlip(end_sound.play)
     win.flip()
     core.wait(1) # wait for the sound to finish
     pport.signal(pm.triggers['misc']['run_endpause'])
@@ -1078,7 +1079,8 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org, seq
         sequence_name = trial_seq_org[k-1]
         sequence = amodal_sequences[sequence_name]
         snd_path = tools['sound_org'][sequence_name] # for the logger only
-        snd = seq_sounds[sequence_name]
+        #snd = seq_sounds[sequence_name]
+        snd = None
         stims = sm.get_stims(pm.input_dir, sequence, modality, lang=tools['exp_info']['lang'])
         logger.info(f'sequence number: {k}')
         logger.info(f'sequence name: {sequence_name}')
@@ -1153,7 +1155,7 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitter, 
     logger.info(f'stimulus path: {stim}')
 
     win.callOnFlip(fl.novov_trigger,pport=pport, trig1=trig1, trig2=trig2, delay=10)
-    win.callOnFlip(snd.play) # play sound at the beginning of the stimulus presentation
+    #win.callOnFlip(snd.play) # play sound at the beginning of the stimulus presentation
     win.flip()
     t1 = time.time()
     core.wait(t_stim)
@@ -1265,8 +1267,8 @@ def pipeline(debugging=False):
     present_rewarded_sequences(tools)
     post_run_break(tools, pause_i=2)
     bonus_question(tools)
-    if tools['exp_info']['run'] == '02':
-        play_tmr(tools)
+    # if tools['exp_info']['run'] == '02':
+    #     play_tmr(tools)
     fl.end_expe(tools)
 
 def test_pipeline(debugging=True):

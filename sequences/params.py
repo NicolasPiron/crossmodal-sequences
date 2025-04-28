@@ -174,7 +174,7 @@ rw_hl_size = rw_img_size + 0.025
 # rw_hl_color = (212, 175, 55) # gold
 rw_hl_color = '#D4AF37'
 flick_freq = 1 # Hz
-t_reward_info = 0.1 # seconds
+t_reward_info = 10 # seconds
 
 # params for the bonus question
 bq_img_size = 0.1

@@ -221,6 +221,7 @@ def ask_all_seq(tools:dict):
     win = tools['win']
     background = tools['background']
     logger = tools['logger']
+    adapt_waitKeys = tools['adapt_waitKeys']
     #win.mouseVisible = False
 
     if logger:
@@ -247,7 +248,7 @@ def ask_all_seq(tools:dict):
     background.draw()
     instructions.draw()
     win.flip()
-    event.waitKeys(keyList=['space'])
+    adapt_waitKeys(keyList=pm.key_bq['confirm'])
 
     for seq in amodal_sequences:
         seq_name = seq[0]
