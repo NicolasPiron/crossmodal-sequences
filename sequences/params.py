@@ -46,10 +46,10 @@ key_dict = {
 key_bq = {
     'left':'1',
     'right':'2',
-    'up':'7',
-    'down':'8',
+    'up':'8',
+    'down':'9',
     'confirm':'4',
-    'remove':'5',
+    'remove':'6',
 }
 
 # stim config
