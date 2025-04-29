@@ -567,7 +567,7 @@ def post_run_break(tools, pause_i):
 
     background.draw()
     instr.draw()
-    #win.callOnFlip(end_sound.play)
+    win.callOnFlip(end_sound.play)
     win.flip()
     core.wait(1) # wait for the sound to finish
     pport.signal(pm.triggers['misc']['run_endpause'])
@@ -1283,8 +1283,8 @@ def pipeline(debugging=False):
     present_rewarded_sequences(tools)
     post_run_break(tools, pause_i=2)
     bonus_question(tools)
-    # if tools['exp_info']['run'] == '02':
-    #     play_tmr(tools)
+    if tools['exp_info']['run'] == '02':
+        play_tmr(tools)
     fl.end_expe(tools)
 
 def test_pipeline(debugging=True):
