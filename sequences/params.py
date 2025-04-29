@@ -11,10 +11,10 @@ snd_stim_dir = Path(f"{input_dir}/sounds/seq_sounds")
 # file names
 bg_fn = Path(f"{input_dir}/background/background2.jpg")
 stim_bg_fn = Path(f"{input_dir}/background/stim_bg.png")
-sound0_fn = Path(f'{input_dir}/sounds/reward.mp3')
-snd_endPause_fn = Path(f'{input_dir}/sounds/end_pause.mp3')
+sound0_fn = Path(f'{input_dir}/sounds/reward.wav')
+snd_endPause_fn = Path(f'{input_dir}/sounds/end_pause.wav')
 fix_img_fn = Path(f"{input_dir}/fix/fix.png")
-q_reward_fn = [Path(f'{input_dir}/sounds/reward{i}.mp3') for i in range(1, 4)]
+q_reward_fn = [Path(f'{input_dir}/sounds/reward{i}.wav') for i in range(1, 4)]
 instr_fnames = {
     'instr1_fn': 'instructions_p1.txt',
     'instr2_fn' : 'instructions_p2.txt',
@@ -68,7 +68,7 @@ if os_name == "Windows":
     use_mock_port = False
     pport = 0x2FB8
 elif os_name == "Linux":
-    screen = 0
+    screen = 1
     use_mock_port = False
     pport = '/dev/parport0'
 elif os_name == "Darwin":
@@ -163,11 +163,11 @@ stxt_dict = {
     },
 }
 # end block pause
-t_post_block = 30 # To adjust after discussion 30
+t_post_block = 1 # To adjust after discussion 30
 t_rotate = 2 # seconds
 
 # end of run pause
-t_post_run = 90 # 90
+t_post_run = 1 # 90
 
 # for rewarded sequence presentation
 rw_img_size = 0.2
@@ -185,8 +185,8 @@ bq_hl_size = bq_img_size + 0.001
 reward_value = 0.5
 
 # params for the TMR
-t_tmr = 120
-t_tmr_delay = 10
+t_tmr = 30
+t_tmr_delay = 2
 tmr_jitter = 1
 
 # trigger mapping :

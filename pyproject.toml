@@ -5,7 +5,7 @@ description = "Tools and scripts for sequence learning experiment"
 authors = [
     { name = "Nicolas Piron", email = "nicolas.piron@unige.ch" },
 ]
-requires-python = "==3.9"
+requires-python = "==3.10.*"
 dependencies = [
     "numpy",
     "pandas",

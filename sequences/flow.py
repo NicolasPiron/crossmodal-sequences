@@ -2,11 +2,10 @@ from psychopy import visual, core, event
 import warnings
 
 
-def end_expe(tools):
-    win = tools['win']
-    logger = tools['logger']
-    logger.info(f"=============== Run {tools['exp_info']['run']} gracefully closed ===============")
-    win.close()
+def end_run(tools):
+    tools['logger'].info(f"=============== Run {tools['exp_info']['run']} gracefully closed ===============")
+    print(f"=============== Run {tools['exp_info']['run']} gracefully closed ===============")
+    tools['win'].close()
     core.quit()
 
 def novov_trigger(pport, trig1, trig2, delay=10):

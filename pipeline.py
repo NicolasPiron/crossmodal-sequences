@@ -182,8 +182,8 @@ def initialize_run(debugging):
     logger.info(f'Run number: {exp_info["run"]}')
     logger.info(f'Language: {exp_info["lang"]}')
 
-    reward_max = None #Sound(pm.sound0_fn)
-    q_reward_sounds = None #[Sound(fn) for fn in pm.q_reward_fn]
+    reward_max = Sound(pm.sound0_fn)
+    q_reward_sounds = [Sound(fn) for fn in pm.q_reward_fn]
     win_dict = get_win_dict()
     win_dict['win'].mouseVisible = False
 
@@ -971,14 +971,14 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         bold=True
     )
      
-    #reward_sound = sm.get_fb_sound(tools['q_reward_sounds'], n_points)
+    reward_sound = sm.get_fb_sound(tools['q_reward_sounds'], n_points)
                         
     background.draw()
     feedback.draw()
     win.callOnFlip(tools['pport'].signal, pm.triggers['misc'][fb_trig])
     win.flip()
-    # if reward_sound:
-    #     reward_sound.play()
+    if reward_sound:
+        reward_sound.play()
     core.wait(t_fb)
     date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     tracker['data'].append({
@@ -1286,7 +1286,7 @@ def pipeline(debugging=False):
     bonus_question(tools)
     if tools['exp_info']['run'] == '02':
         play_tmr(tools)
-    fl.end_expe(tools)
+    fl.end_run(tools)
 
 def test_pipeline(debugging=True):
     tools = execute_run(debugging)
