@@ -13,7 +13,8 @@ import platform
 from datetime import datetime
 from psychopy.gui import DlgFromDict
 from psychopy.hardware.keyboard import Keyboard
-from psychopy import visual, core, event, sound
+from psychopy import visual, core, event #, sound
+from stimuli.audio import Sound
 from sequences import stimuli_manager as sm
 from sequences import flow as fl
 from sequences import params as pm
@@ -181,8 +182,8 @@ def initialize_run(debugging):
     logger.info(f'Run number: {exp_info["run"]}')
     logger.info(f'Language: {exp_info["lang"]}')
 
-    reward_max = sound.Sound(pm.sound0_fn)
-    q_reward_sounds = [sound.Sound(fn) for fn in pm.q_reward_fn]
+    reward_max = None #Sound(pm.sound0_fn)
+    q_reward_sounds = None #[Sound(fn) for fn in pm.q_reward_fn]
     win_dict = get_win_dict()
     win_dict['win'].mouseVisible = False
 
@@ -255,7 +256,7 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
 
     for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
         tools['tracker']['trial_id'] = j
-        seq_sounds = {seq_n:sound.Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
+        seq_sounds = {seq_n:Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
         #seq_sounds = None
         trial_seq_org, trial_mod_org = initialize_trial_sequences(
             tools=tools,
@@ -537,7 +538,7 @@ def post_run_break(tools, pause_i):
     st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]['think'] 
 
     # sound indicating the end of the break
-    end_sound = sound.Sound(pm.snd_endPause_fn)
+    end_sound = Sound(pm.snd_endPause_fn)
     # intructions
     text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
     instr = visual.TextStim(
@@ -601,7 +602,7 @@ def play_tmr(tools):
         units='norm'
     ) 
     # load tmr part
-    s_dict = {seq_n:sound.Sound(fn) for seq_n, fn in tools['sound_org'].items()}
+    s_dict = {seq_n:Sound(fn) for seq_n, fn in tools['sound_org'].items()}
     text = it.get_txt(tools['exp_info']['lang'], 'instr_tmr2')
     instr2 = visual.TextStim(
         win=tools['win'],
@@ -970,14 +971,14 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
         bold=True
     )
      
-    reward_sound = sm.get_fb_sound(tools['q_reward_sounds'], n_points)
+    #reward_sound = sm.get_fb_sound(tools['q_reward_sounds'], n_points)
                         
     background.draw()
     feedback.draw()
     win.callOnFlip(tools['pport'].signal, pm.triggers['misc'][fb_trig])
     win.flip()
-    if reward_sound:
-        reward_sound.play()
+    # if reward_sound:
+    #     reward_sound.play()
     core.wait(t_fb)
     date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     tracker['data'].append({
@@ -1041,8 +1042,8 @@ def provide_trial_feedback(tools, tracker):
     if tools['debugging']:
         t_post_q = 0.01
 
-    if tracker['points_attributed'] > 6:
-        tools['reward_max'].play() 
+    # if tracker['points_attributed'] > 6:
+    #     tools['reward_max'].play() 
     trial_feedback = sm.get_trial_feedback(
         n_points=tracker['points_attributed'], 
         max_points=pm.max_points, 

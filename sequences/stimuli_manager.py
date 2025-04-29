@@ -30,7 +30,7 @@ def get_reward_info(two_run_org:Dict[str, Dict[str, List[str]]], seed:int, n:int
 def distribute_snd(seq_names:List[str], snd_dir:str, seed:int)-> Dict[str, str]:
     ''' Attribute a sound path to each sequence. This is done randomly for each participant.'''
     random.seed(seed)
-    sounds = sorted(glob.glob(os.path.join(snd_dir, '*.mp3')))
+    sounds = sorted(glob.glob(os.path.join(snd_dir, '*.wav')))
     random.shuffle(sounds)
     random.shuffle(seq_names)
     snd_mapping = {name: snd for name, snd in zip(seq_names, sounds)}
