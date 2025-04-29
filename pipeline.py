@@ -183,7 +183,6 @@ def initialize_run(debugging):
 
     reward_max = sound.Sound(pm.sound0_fn)
     q_reward_sounds = [sound.Sound(fn) for fn in pm.q_reward_fn]
-    # tone_mapping = sm.get_pure_tone_dict() #TODO : add this to the params file
     win_dict = get_win_dict()
     win_dict['win'].mouseVisible = False
 
@@ -256,8 +255,8 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
 
     for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
         tools['tracker']['trial_id'] = j
-        #seq_sounds = {seq_n:sound.Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
-        seq_sounds = None
+        seq_sounds = {seq_n:sound.Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
+        #seq_sounds = None
         trial_seq_org, trial_mod_org = initialize_trial_sequences(
             tools=tools,
             first_seq_mod_org=first_seq_mod_org,
@@ -538,7 +537,7 @@ def post_run_break(tools, pause_i):
     st1, st2 = pm.stxt_dict[tools['exp_info']['lang']]['think'] 
 
     # sound indicating the end of the break
-    #end_sound = sound.Sound(pm.snd_endPause_fn)
+    end_sound = sound.Sound(pm.snd_endPause_fn)
     # intructions
     text = it.get_txt(tools['exp_info']['lang'], 'instr_pause_fn')
     instr = visual.TextStim(
@@ -585,7 +584,6 @@ def post_run_break(tools, pause_i):
 
 def play_tmr(tools):
     ''' Play the targeted memory reactivation sounds. Returns nothing. '''
-    # TODO : add a waitkeys. 
     pport = tools['pport']
     logger = tools['logger']
     win = tools['win']
@@ -1097,8 +1095,8 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org, seq
         sequence_name = trial_seq_org[k-1]
         sequence = amodal_sequences[sequence_name]
         snd_path = tools['sound_org'][sequence_name] # for the logger only
-        #snd = seq_sounds[sequence_name]
-        snd = None
+        snd = seq_sounds[sequence_name]
+        #snd = None
         stims = sm.get_stims(pm.input_dir, sequence, modality, lang=tools['exp_info']['lang'])
         logger.info(f'sequence number: {k}')
         logger.info(f'sequence name: {sequence_name}')
@@ -1173,7 +1171,7 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitter, 
     logger.info(f'stimulus path: {stim}')
 
     win.callOnFlip(fl.novov_trigger,pport=pport, trig1=trig1, trig2=trig2, delay=10)
-    #win.callOnFlip(snd.play) # play sound at the beginning of the stimulus presentation
+    win.callOnFlip(snd.play) # play sound at the beginning of the stimulus presentation
     win.flip()
     t1 = time.time()
     core.wait(t_stim)

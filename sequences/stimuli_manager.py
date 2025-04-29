@@ -332,6 +332,7 @@ def get_feedback_args(distance:int, lang:str)-> Tuple[str, str, bool, int]:
 
 def get_trial_feedback(n_points:int, max_points:int, lang:str)-> str:
     '''Return the feedback text based on the number of points obtained'''
+    # TODO: fix this so it stops saying you almost made it when all points
     messages = {
         'en': [
             (0, f"Too bad! You didn't win any points out of {max_points}."),
