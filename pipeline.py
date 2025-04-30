@@ -842,12 +842,12 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     cat2 = sm.get_cat_from_stim(stims[idx2])
 
     triggers1 = [
-        pm.triggers['seq_pos'][seq_name][idx1],
-        pm.triggers['seq_pos'][seq_name][idx2]
-    ]
-    triggers2 = [
         pm.triggers['mod_cat'][modality][cat1],
         pm.triggers['mod_cat'][modality][cat2]
+    ]
+    triggers2 = [
+        pm.triggers['seq_pos'][seq_name][idx1],
+        pm.triggers['seq_pos'][seq_name][idx2]
     ]
 
     logger.info(f'first item on screen: {first_for_question}')
@@ -1134,8 +1134,8 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitter, 
         t_isi = 0.01
 
     stim_cat = sm.get_cat_from_stim(stim)
-    trig1 = pm.triggers['seq_pos'][sequence_name][i] # key is seq name (e.g., 'A') and then index of the item to find trigger in the list
-    trig2 = pm.triggers['mod_cat'][modality][stim_cat] # keys are 'img'/'txt' and category names (e.g., 'animals')
+    trig1 = pm.triggers['mod_cat'][modality][stim_cat] # keys are 'img'/'txt' and category names (e.g., 'animals')
+    trig2 = pm.triggers['seq_pos'][sequence_name][i] # key is seq name (e.g., 'A') and then index of the item to find trigger in the list
                         
     fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
     stim_image = visual.ImageStim(win=win,
