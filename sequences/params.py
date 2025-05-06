@@ -163,11 +163,11 @@ stxt_dict = {
     },
 }
 # end block pause
-t_post_block = 1 # To adjust after discussion 30
+t_post_block = 30 # To adjust after discussion 30
 t_rotate = 2 # seconds
 
 # end of run pause
-t_post_run = 1 # 90
+t_post_run = 90 # 90
 
 # for rewarded sequence presentation
 rw_img_size = 0.2

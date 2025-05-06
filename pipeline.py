@@ -909,8 +909,8 @@ def ask_trial_question(tools, tracker, amodal_sequences, question_modalities, se
     # rectangle for photodiode
     rect = visual.Rect(
         win=win,
-        width=0.05,
-        height=0.05*aspect_ratio,
+        width=0.1,
+        height=0.1*aspect_ratio,
         pos=(1, 1),
         units='norm',
         fillColor=(255, 255, 255),
@@ -1114,7 +1114,7 @@ def present_stimuli(tools, sequence, sequence_name, stims, modality, snd):
     for i, stim in enumerate(stims):
         if debugging:
             continue
-        snd.play()
+        #snd.play()
         present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitters[i], snd)
     return
 
