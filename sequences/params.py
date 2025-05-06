@@ -46,10 +46,10 @@ key_dict = {
 # for the bonus question
 key_bq = {
     'left':'1',
-    'right':'2',
+    'right':'3',
     'up':'8',
     'down':'9',
-    'confirm':'4',
+    'confirm':'2',
     'remove':'6',
 }
 
