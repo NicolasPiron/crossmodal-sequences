@@ -1114,6 +1114,7 @@ def present_stimuli(tools, sequence, sequence_name, stims, modality, snd):
     for i, stim in enumerate(stims):
         if debugging:
             continue
+        snd.play()
         present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitters[i], snd)
     return
 
@@ -1172,18 +1173,18 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitter, 
     logger.info(f'stimulus path: {stim}')
 
     win.callOnFlip(fl.novov_trigger,pport=pport, trig1=trig1, trig2=trig2, delay=10)
-    win.callOnFlip(snd.play) # play sound at the beginning of the stimulus presentation
+    #win.callOnFlip(snd.play) # play sound at the beginning of the stimulus presentation
     win.flip()
     t1 = time.time()
-    #core.wait(t_stim)
-    fl.wait_frate(win, [background, rect, stim_image], frate=pm.frate, t=t_stim) # wait for the frame rate to be reached
+    core.wait(t_stim)
+    #fl.wait_frate(win, [background, rect, stim_image], frate=pm.frate, t=t_stim) # wait for the frame rate to be reached
     print(f"stimulus {i+1} presented in {time.time()-t1:.5f} seconds")
     background.draw()
     fix_cross.draw()
     win.flip()
     t3 = time.time()
-    #core.wait(t_isi)
-    fl.wait_frate(win, [background, fix_cross], frate=pm.frate, t=t_isi)
+    core.wait(t_isi)
+    #fl.wait_frate(win, [background, fix_cross], frate=pm.frate, t=t_isi)
     print(f"stimulus {i+1} ISI in {time.time()-t3:.5f} seconds")
     return
 
