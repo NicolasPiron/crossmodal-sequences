@@ -17,6 +17,16 @@ vis_stim = visual.ImageStim(
 )
 snd = Sound('data/input/sounds/seq_sounds/bass.wav')
 
+rect = visual.Rect(
+    win=win,
+    width=0.5,
+    height=0.5*win_d["aspect_ratio"],
+    pos=(1, 1),
+    units='norm',
+    fillColor=(255, 255, 255),
+)
+    
+
 def wait_frate(win, objects:list, frate:int, t:int):
     ''' Function to wait for a certain number of frames '''
     # Calculate the number of frames to wait
@@ -33,6 +43,7 @@ times = {}
 clock = core.Clock()
 for _ in range(20):
     bg.draw()
+    rect.draw()
     vis_stim.draw()
     snd.play()
     win.callOnFlip(clock.reset)

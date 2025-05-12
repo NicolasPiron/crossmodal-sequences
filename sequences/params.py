@@ -9,7 +9,7 @@ output_dir = Path("data/output")
 spin_wheel_dir = Path(f"{input_dir}/spin_wheel")
 snd_stim_dir = Path(f"{input_dir}/sounds/seq_sounds")
 # file names
-bg_fn = Path(f"{input_dir}/background/background2.jpg")
+bg_fn = Path(f"{input_dir}/background/background3.jpg")
 stim_bg_fn = Path(f"{input_dir}/background/stim_bg.png")
 sound0_fn = Path(f'{input_dir}/sounds/reward.wav')
 snd_endPause_fn = Path(f'{input_dir}/sounds/end_pause.wav')
