@@ -27,25 +27,42 @@ def wait_frate(win, objects:list, frate:int, t:int):
             obj.draw()
         win.flip()
 
-times = []
+frate = None
+
+times = {}
 clock = core.Clock()
-for _ in range(100):
+for _ in range(20):
     bg.draw()
     vis_stim.draw()
     snd.play()
+    win.callOnFlip(clock.reset)
     win.flip()
-    clock.reset()
-    wait_frate(win, [bg, vis_stim], 120, 1)
-    t = clock.getTime()
-    print(t)
-    times.append(t)
-    
+    #wait_frate(win, [bg, vis_stim], frate, 0.3)
+    core.wait(0.3)
+    t_stim = clock.getTime()
+    print('stim time :', t_stim)
+    times['stim'] = t_stim
+    bg.draw()
+    win.callOnFlip(clock.reset)
+    win.flip()
+    core.wait(1)
+    #wait_frate(win, [bg, vis_stim], frate, 1)
+    t_isi = clock.getTime()
+    print('isi time :', t_isi)
+    times['isi'] = t_isi
+
 win.close()
 
-fig, ax = plt.subplots()
-ax.hist(times, bins=20)
-ax.set_xlabel('Time (s)')
-ax.set_ylabel('Frequency')
-ax.set_title('Histogram of Times')
+fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+ax[0].hist(times['stim'], bins=20)
+ax[0].set_title('Stimulus Time')
+ax[0].set_xlabel('Time (s)')
+ax[0].set_ylabel('Frequency')
+ax[1].hist(times['isi'], bins=20)
+ax[1].set_title('ISI Time')
+ax[1].set_xlabel('Time (s)')
+ax[1].set_ylabel('Frequency')
+plt.tight_layout()
+plt.suptitle('Distribution of Stimulus and ISI Times')
 plt.show()
 
