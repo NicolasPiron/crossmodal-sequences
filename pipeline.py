@@ -112,9 +112,9 @@ def initialize_run(debugging):
     exp_info = {
         'ID': '00',
         'run': '01',
-        'block': '04',
-        'trial': '03',
-        'seq': '06',
+        'block': '01',
+        'trial': '01',
+        'seq': '01',
         'lang': 'fr'
     }
 
@@ -134,7 +134,7 @@ def initialize_run(debugging):
     os.makedirs(out_dir, exist_ok=True)
 
     fn_n_dir = os.listdir(out_dir)
-    if len(fn_n_dir) > 10: # check if the output directory is not filled with old files
+    if len(fn_n_dir) > 30: # check if the output directory is not filled with old files
         if not debugging:
             #print('output dir not empty, overwriting')
             print(f"--- Output directory {out_dir} is not empty, exiting... ---")
@@ -256,8 +256,8 @@ def execute_block(tools, amodal_sequences, question_mod_org, first_seq_mod_org, 
 
     for j in range(n_skip+1, pm.n_trials+1): # +1 because we want to include the last trial and start from 1.
         tools['tracker']['trial_id'] = j
-        #seq_sounds = {seq_n:Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
-        seq_sounds = None
+        seq_sounds = {seq_n:Sound(path) for seq_n, path in tools['sound_org'].items()} # sounds are loaded here
+        #seq_sounds = None
         trial_seq_org, trial_mod_org = initialize_trial_sequences(
             tools=tools,
             first_seq_mod_org=first_seq_mod_org,
@@ -1096,8 +1096,8 @@ def present_sequences(tools, amodal_sequences, trial_seq_org, trial_mod_org, seq
         sequence_name = trial_seq_org[k-1]
         sequence = amodal_sequences[sequence_name]
         snd_path = tools['sound_org'][sequence_name] # for the logger only
-        #snd = seq_sounds[sequence_name]
-        snd = None
+        snd = seq_sounds[sequence_name]
+        #snd = None
         stims = sm.get_stims(pm.input_dir, sequence, modality, lang=tools['exp_info']['lang'])
         logger.info(f'sequence number: {k}')
         logger.info(f'sequence name: {sequence_name}')
@@ -1114,7 +1114,7 @@ def present_stimuli(tools, sequence, sequence_name, stims, modality, snd):
     for i, stim in enumerate(stims):
         if debugging:
             continue
-        #snd.play()
+        snd.play()
         present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitters[i], snd)
     return
 
@@ -1139,7 +1139,8 @@ def present_stimulus(tools, sequence, sequence_name, i, stim, modality, jitter, 
     trig2 = pm.triggers['seq_pos'][sequence_name][i] # key is seq name (e.g., 'A') and then index of the item to find trigger in the list
                         
     fl.check_escape_or_break(tools, pause_key=pm.key_dict['pause'])
-    stim_image = visual.ImageStim(win=win,
+    stim_image = visual.ImageStim(
+        win=win,
         image=stim,
         size=(pm.img_size, pm.img_size*aspect_ratio)
     )

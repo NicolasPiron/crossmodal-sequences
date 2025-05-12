@@ -338,14 +338,12 @@ def get_trial_feedback(n_points:int, max_points:int, lang:str)-> str:
             (0, f"Too bad! You didn't win any points out of {max_points}."),
             (0.4, f"Not bad, you won {n_points} points out of {max_points}. Keep trying!"),
             (0.7, f"Well done! You got {n_points} points out of {max_points}."),
-            (1.0, f"Excellent! You almost made it with {n_points} points out of {max_points}."),
             (1.0, f"Bravo! Perfect score: {n_points} out of {max_points} !")
         ],
         'fr': [
             (0, f"Dommage! Vous n'avez gagné aucun point sur {max_points}."),
             (0.4, f"Pas mal, vous avez gagné {n_points} points sur {max_points}. Continuez à essayer !"),
             (0.7, f"Bien joué! Vous avez obtenu {n_points} points sur {max_points}."),
-            (1.0, f"Excellent! Vous avez presque réussi avec {n_points} points sur {max_points}."),
             (1.0, f"Bravo! Score parfait : {n_points} sur {max_points} !")
         ]
     }
